@@ -1,0 +1,20 @@
+# Compiled binaries
+/bin/
+*.exe
+
+# Test & coverage output
+*.out
+coverage.*
+
+# Environment files (never commit secrets)
+.env
+.env.local
+*.env.local
+
+# Local runtime data (superseded by MinIO/S3)
+/data/
+
+# OS / editor cruft
+.DS_Store
+__MACOSX/
+.idea/

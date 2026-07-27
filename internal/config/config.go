@@ -1,0 +1,180 @@
+// Package config assembles the application's configuration from environment
+// variables. Every service loads the same Config struct but only reads the
+// sections it needs — the gateway ignores SMTP, the notifier ignores Storage,
+// and so on. Centralizing this keeps env-var names defined in exactly one place.
+package config
+
+import (
+	"fmt"
+	"os"
+	"strconv"
+	"time"
+)
+
+// Config is the full, service-agnostic configuration tree.
+type Config struct {
+	Env      string // "development" | "production"
+	LogLevel string // "debug" | "info" | "warn" | "error"
+
+	HTTP     HTTPConfig
+	Postgres PostgresConfig
+	Redis    RedisConfig
+	RabbitMQ RabbitMQConfig
+	Storage  StorageConfig
+	JWT      JWTConfig
+	SMTP     SMTPConfig
+}
+
+// HTTPConfig configures the gateway's HTTP server.
+type HTTPConfig struct {
+	Port            string
+	ShutdownTimeout time.Duration
+}
+
+// PostgresConfig holds the connection string for the primary datastore.
+type PostgresConfig struct {
+	DSN string
+}
+
+// RedisConfig configures the cache / token store.
+type RedisConfig struct {
+	Addr     string
+	Password string
+	DB       int
+}
+
+// RabbitMQConfig configures the message broker connection.
+type RabbitMQConfig struct {
+	URL string
+}
+
+// StorageConfig configures the S3-compatible object store (MinIO in dev, S3 in prod).
+type StorageConfig struct {
+	Endpoint  string
+	Region    string
+	Bucket    string
+	AccessKey string
+	SecretKey string
+	UseSSL    bool
+}
+
+// JWTConfig configures token signing and lifetime.
+type JWTConfig struct {
+	Secret string
+	TTL    time.Duration
+}
+
+// SMTPConfig configures the outbound mail server used by the notifier.
+type SMTPConfig struct {
+	Host string
+	Port int
+	From string
+}
+
+// Load reads configuration from the environment, applying development-friendly
+// defaults so the services can boot locally without a fully populated .env.
+// It returns an error only if a value that should be numeric/boolean/duration
+// is present but malformed.
+func Load() (Config, error) {
+	l := &loader{}
+
+	cfg := Config{
+		Env:      l.str("APP_ENV", "development"),
+		LogLevel: l.str("LOG_LEVEL", "info"),
+
+		HTTP: HTTPConfig{
+			Port:            l.str("HTTP_PORT", "8080"),
+			ShutdownTimeout: l.duration("HTTP_SHUTDOWN_TIMEOUT", 10*time.Second),
+		},
+		Postgres: PostgresConfig{
+			DSN: l.str("POSTGRES_DSN", "postgres://fiapx:fiapx@localhost:5432/fiapx?sslmode=disable"),
+		},
+		Redis: RedisConfig{
+			Addr:     l.str("REDIS_ADDR", "localhost:6379"),
+			Password: l.str("REDIS_PASSWORD", ""),
+			DB:       l.int("REDIS_DB", 0),
+		},
+		RabbitMQ: RabbitMQConfig{
+			URL: l.str("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"),
+		},
+		Storage: StorageConfig{
+			Endpoint:  l.str("S3_ENDPOINT", "localhost:9000"),
+			Region:    l.str("S3_REGION", "us-east-1"),
+			Bucket:    l.str("S3_BUCKET", "fiapx-videos"),
+			AccessKey: l.str("S3_ACCESS_KEY", "minioadmin"),
+			SecretKey: l.str("S3_SECRET_KEY", "minioadmin"),
+			UseSSL:    l.boolean("S3_USE_SSL", false),
+		},
+		JWT: JWTConfig{
+			Secret: l.str("JWT_SECRET", "dev-insecure-secret-change-me"),
+			TTL:    l.duration("JWT_TTL", 24*time.Hour),
+		},
+		SMTP: SMTPConfig{
+			Host: l.str("SMTP_HOST", "localhost"),
+			Port: l.int("SMTP_PORT", 1025),
+			From: l.str("SMTP_FROM", "no-reply@fiapx.local"),
+		},
+	}
+
+	return cfg, l.err
+}
+
+// loader accumulates the first parse error encountered while reading env vars.
+// This lets Load build the whole Config in one expression and report a single
+// error at the end, instead of checking err after every field.
+type loader struct {
+	err error
+}
+
+func (l *loader) str(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return def
+}
+
+func (l *loader) int(key string, def int) int {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		l.record(key, err)
+		return def
+	}
+	return n
+}
+
+func (l *loader) boolean(key string, def bool) bool {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
+	}
+	b, err := strconv.ParseBool(v)
+	if err != nil {
+		l.record(key, err)
+		return def
+	}
+	return b
+}
+
+func (l *loader) duration(key string, def time.Duration) time.Duration {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
+	}
+	d, err := time.ParseDuration(v)
+	if err != nil {
+		l.record(key, err)
+		return def
+	}
+	return d
+}
+
+// record keeps only the first error so the caller sees the earliest problem.
+func (l *loader) record(key string, err error) {
+	if l.err == nil {
+		l.err = fmt.Errorf("config: invalid value for %s: %w", key, err)
+	}
+}
