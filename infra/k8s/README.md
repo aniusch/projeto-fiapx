@@ -42,7 +42,7 @@ Apply. Kustomize reads the migration SQL from `../../migrations`, which needs th
 relaxed load restrictor, so build-and-pipe rather than `apply -k`:
 
 ```bash
-kubectl kustomize --load-restrictor LoadRestrictionsNone deploy/k8s | kubectl apply -f -
+kubectl kustomize --load-restrictor LoadRestrictionsNone infra/k8s | kubectl apply -f -
 kubectl -n fiapx get pods -w
 ```
 

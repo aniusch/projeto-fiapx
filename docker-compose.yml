@@ -94,7 +94,7 @@ services:
   worker:
     build:
       context: .
-      dockerfile: deploy/docker/worker.Dockerfile
+      dockerfile: infra/docker/worker.Dockerfile
     depends_on:
       postgres:
         condition: service_healthy
@@ -122,7 +122,7 @@ services:
   gateway:
     build:
       context: .
-      dockerfile: deploy/docker/service.Dockerfile
+      dockerfile: infra/docker/service.Dockerfile
       args:
         SERVICE: gateway
     depends_on:
@@ -157,7 +157,7 @@ services:
   notifier:
     build:
       context: .
-      dockerfile: deploy/docker/service.Dockerfile
+      dockerfile: infra/docker/service.Dockerfile
       args:
         SERVICE: notifier
     depends_on:
@@ -186,7 +186,7 @@ services:
   prometheus:
     image: prom/prometheus:v2.53.0
     volumes:
-      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
       - "9090:9090"
     restart: unless-stopped
@@ -200,8 +200,8 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: admin
       GF_USERS_ALLOW_SIGN_UP: "false"
     volumes:
-      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./deploy/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafanadata:/var/lib/grafana
     ports:
       - "3000:3000"

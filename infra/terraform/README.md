@@ -40,7 +40,7 @@ S3 are managed.
 ## Deploy
 
 ```bash
-cd deploy/terraform
+cd infra/terraform
 
 # 1) One-time: create the remote-state bucket + lock table.
 REGION=us-east-1 BUCKET=fiapx-tfstate-<account-id> ./scripts/bootstrap-state.sh

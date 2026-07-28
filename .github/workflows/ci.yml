@@ -96,13 +96,13 @@ jobs:
       matrix:
         include:
           - service: gateway
-            dockerfile: deploy/docker/service.Dockerfile
+            dockerfile: infra/docker/service.Dockerfile
             build_args: SERVICE=gateway
           - service: notifier
-            dockerfile: deploy/docker/service.Dockerfile
+            dockerfile: infra/docker/service.Dockerfile
             build_args: SERVICE=notifier
           - service: worker
-            dockerfile: deploy/docker/worker.Dockerfile
+            dockerfile: infra/docker/worker.Dockerfile
             build_args: ""
     steps:
       - uses: actions/checkout@v4

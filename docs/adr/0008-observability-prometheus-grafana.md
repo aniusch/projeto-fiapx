@@ -21,7 +21,7 @@ in **Grafana**.
   count/latency, worker jobs-processed (by outcome), job-duration histogram and
   in-flight gauge, and notifier notifications (by outcome).
 - Prometheus scrapes all services on the compose network; a provisioned Grafana
-  datasource and starter dashboard ship in the repo under `deploy/`.
+  datasource and starter dashboard ship in the repo under `infra/`.
 
 To make in-network scraping straightforward, the gateway and notifier are now
 containerized alongside the worker.

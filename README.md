@@ -93,16 +93,16 @@ go run ./cmd/worker     # requires ffmpeg on the host (or set FFMPEG_PATH)
 
 ## Kubernetes
 
-Manifests for the whole system live in [`deploy/k8s/`](./deploy/k8s/) (Kustomize):
+Manifests for the whole system live in [`infra/k8s/`](./infra/k8s/) (Kustomize):
 Deployments for the three services, in-cluster backing services, a migration Job,
 liveness/readiness probes, an Ingress, and a **HorizontalPodAutoscaler on the
 worker** (2→6 replicas on CPU) — the concrete "scale the CPU-heavy tier"
-demonstration. See [`deploy/k8s/README.md`](./deploy/k8s/README.md) for the deploy
+demonstration. See [`infra/k8s/README.md`](./infra/k8s/README.md) for the deploy
 steps; the short version:
 
 ```bash
 minikube image load fiapx/gateway:latest fiapx/worker:latest fiapx/notifier:latest
-kubectl kustomize --load-restrictor LoadRestrictionsNone deploy/k8s | kubectl apply -f -
+kubectl kustomize --load-restrictor LoadRestrictionsNone infra/k8s | kubectl apply -f -
 ```
 
 ## CI/CD
@@ -117,7 +117,7 @@ kubectl kustomize --load-restrictor LoadRestrictionsNone deploy/k8s | kubectl ap
    (`ghcr.io/aniusch/projeto-fiapx-{gateway,worker,notifier}`), with build caching.
 
 To deploy those published images to Kubernetes, point the manifests at GHCR by
-editing the `images:` block in [`deploy/k8s/kustomization.yaml`](./deploy/k8s/kustomization.yaml).
+editing the `images:` block in [`infra/k8s/kustomization.yaml`](./infra/k8s/kustomization.yaml).
 
 ## Monitoring
 

@@ -136,7 +136,7 @@ sequence. Uploads return **202 Accepted** immediately after enqueuing.
 Every service exposes Prometheus metrics (`fiapx_<service>_<name>`): gateway HTTP
 rate/latency, worker jobs-by-outcome + duration histogram + in-flight gauge,
 notifier deliveries. Prometheus scrapes them; a provisioned **Grafana** dashboard
-("FIAP X — Overview") ships in [`deploy/grafana`](../deploy/grafana). Structured
+("FIAP X — Overview") ships in [`infra/grafana`](../infra/grafana). Structured
 JSON logs (via `slog`) are emitted in production. See
 [ADR-0008](./adr/0008-observability-prometheus-grafana.md).
 
@@ -144,7 +144,7 @@ JSON logs (via `slog`) are emitted in production. See
 
 - **Docker Compose** ([`docker-compose.yml`](../docker-compose.yml)) runs the
   whole system — services, backing stores, and monitoring — with one command.
-- **Kubernetes** ([`deploy/k8s`](../deploy/k8s)) provides Deployments, Services,
+- **Kubernetes** ([`infra/k8s`](../infra/k8s)) provides Deployments, Services,
   an Ingress, probes wired to `/healthz` + `/readyz`, ConfigMap/Secret, a
   migration Job, and the worker HPA. Verified on minikube.
 

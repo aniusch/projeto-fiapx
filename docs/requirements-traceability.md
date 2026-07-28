@@ -7,7 +7,7 @@ how it was verified.
 
 | Requirement | Where it's met | How it's verified |
 | ----------- | -------------- | ----------------- |
-| Process more than one video at the same time | Stateless `worker` scaled by replicas; prefetch-bounded concurrent consumers ([`internal/worker/consumer.go`](../internal/worker/consumer.go)); `--scale worker=N` / [HPA](../deploy/k8s/worker.yaml) | Compose + k8s deploys; HPA observed at `cpu:70%` target |
+| Process more than one video at the same time | Stateless `worker` scaled by replicas; prefetch-bounded concurrent consumers ([`internal/worker/consumer.go`](../internal/worker/consumer.go)); `--scale worker=N` / [HPA](../infra/k8s/worker.yaml) | Compose + k8s deploys; HPA observed at `cpu:70%` target |
 | Must not lose a request during spikes | Gateway only enqueues and returns **202**; durable RabbitMQ queue with persistent messages + DLQ ([`internal/messaging`](../internal/messaging)) | e2e: upload lands a message in `videos.jobs`; worker drains it |
 | Protected by user + password | bcrypt + JWT ([`internal/auth`](../internal/auth)); auth middleware on `/videos/*` ([`internal/gateway/middleware.go`](../internal/gateway/middleware.go)) | Unit tests (auth, gateway); e2e register/login/401 |
 | Per-user status listing | `GET /videos` scoped to the caller ([`internal/gateway/video_handler.go`](../internal/gateway/video_handler.go)); indexed `videos(user_id, created_at)` | Gateway tests; e2e listing |
@@ -27,7 +27,7 @@ how it was verified.
 
 | Area | Recommended | Chosen |
 | ---- | ----------- | ------ |
-| Containers | Docker + Kubernetes **or** Compose | **Both** — [`docker-compose.yml`](../docker-compose.yml) and [`deploy/k8s`](../deploy/k8s) |
+| Containers | Docker + Kubernetes **or** Compose | **Both** — [`docker-compose.yml`](../docker-compose.yml) and [`infra/k8s`](../infra/k8s) |
 | Messaging | RabbitMQ / Kafka / similar | **RabbitMQ** |
 | Database | PostgreSQL + Redis | **PostgreSQL + Redis** |
 | Monitoring | Prometheus + Grafana / ELK | **Prometheus + Grafana** |
