@@ -60,6 +60,20 @@ kubectl -n fiapx get hpa worker          # watch autoscaling
 kubectl -n fiapx top pods                # live CPU/memory
 ```
 
+## Using published (GHCR) images
+
+CI publishes images to `ghcr.io/aniusch/projeto-fiapx-{gateway,worker,notifier}`.
+To pull those instead of loading local images, update the `images:` block in
+`kustomization.yaml`, e.g.:
+
+```yaml
+images:
+  - name: fiapx/gateway
+    newName: ghcr.io/aniusch/projeto-fiapx-gateway
+    newTag: latest
+  # ...worker, notifier likewise
+```
+
 ## Tear down
 
 ```bash

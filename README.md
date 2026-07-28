@@ -1,5 +1,7 @@
 # FIAP X — Sistema de Processamento de Vídeos
 
+[![CI](https://github.com/aniusch/projeto-fiapx/actions/workflows/ci.yml/badge.svg)](https://github.com/aniusch/projeto-fiapx/actions/workflows/ci.yml)
+
 Re-architecture of the FIAP X video processor (POSTECH SOAT — Fase 5 / Hackathon)
 from a single-file monolith into a scalable, resilient, microservice-based system.
 
@@ -99,6 +101,20 @@ steps; the short version:
 minikube image load fiapx/gateway:latest fiapx/worker:latest fiapx/notifier:latest
 kubectl kustomize --load-restrictor LoadRestrictionsNone deploy/k8s | kubectl apply -f -
 ```
+
+## CI/CD
+
+[GitHub Actions](./.github/workflows/ci.yml) runs on every push and pull request:
+
+1. **Lint, build & test** — `gofmt` check, `go vet`, build, unit tests (`-race`),
+   then integration tests against Postgres/Redis/Mailpit service containers with
+   ffmpeg installed and migrations applied.
+2. **Build & push images** — on pushes to `main`/tags, builds the three service
+   images and pushes them to the GitHub Container Registry
+   (`ghcr.io/aniusch/projeto-fiapx-{gateway,worker,notifier}`), with build caching.
+
+To deploy those published images to Kubernetes, point the manifests at GHCR by
+editing the `images:` block in [`deploy/k8s/kustomization.yaml`](./deploy/k8s/kustomization.yaml).
 
 ## Monitoring
 

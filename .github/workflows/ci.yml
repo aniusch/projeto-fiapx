@@ -1,0 +1,139 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+
+# Cancel superseded runs on the same ref to save CI minutes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Lint, build & test
+    runs-on: ubuntu-latest
+
+    # Backing services the integration tests talk to (reachable on localhost).
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: fiapx
+          POSTGRES_PASSWORD: fiapx
+          POSTGRES_DB: fiapx
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U fiapx -d fiapx"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+      mailpit:
+        image: axllent/mailpit:v1.20
+        ports: ["1025:1025", "8025:8025"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod # match the version pinned in go.mod
+          cache: true
+
+      - name: Install ffmpeg & psql
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg postgresql-client
+
+      - name: Check formatting
+        run: |
+          unformatted="$(gofmt -l cmd internal)"
+          if [ -n "$unformatted" ]; then
+            echo "These files are not gofmt-ed:"; echo "$unformatted"; exit 1
+          fi
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build
+        run: go build ./...
+
+      - name: Unit tests
+        run: go test -race ./...
+
+      - name: Apply migrations
+        env:
+          PGPASSWORD: fiapx
+        run: psql -h localhost -U fiapx -d fiapx -f migrations/0001_init.up.sql
+
+      - name: Integration tests
+        env:
+          TEST_POSTGRES_DSN: postgres://fiapx:fiapx@localhost:5432/fiapx?sslmode=disable
+          TEST_REDIS_ADDR: localhost:6379
+          TEST_SMTP_HOST: localhost
+          TEST_SMTP_PORT: "1025"
+          TEST_MAILPIT_API: http://localhost:8025
+        run: go test -tags=integration ./...
+
+  images:
+    name: Build & push images
+    needs: test
+    # Only publish from the main branch / tags, never from pull requests.
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - service: gateway
+            dockerfile: deploy/docker/service.Dockerfile
+            build_args: SERVICE=gateway
+          - service: notifier
+            dockerfile: deploy/docker/service.Dockerfile
+            build_args: SERVICE=notifier
+          - service: worker
+            dockerfile: deploy/docker/worker.Dockerfile
+            build_args: ""
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}-${{ matrix.service }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha
+            type=ref,event=tag
+
+      - name: Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          build-args: ${{ matrix.build_args }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
