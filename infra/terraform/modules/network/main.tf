@@ -15,9 +15,8 @@ resource "aws_internet_gateway" "this" {
   tags   = { Name = "${var.project}-igw" }
 }
 
-# Public subnets only — nodes get public IPs and reach the internet directly via
-# the IGW. This deliberately avoids NAT gateways, which cost money and would eat
-# into the Learner Lab budget. Fine for a demo; not the pattern for production.
+# Public subnets only — nodes get public IPs and reach the internet via the IGW.
+# This deliberately avoids NAT gateways, which cost money (Learner Lab budget).
 resource "aws_subnet" "public" {
   count = var.az_count
 

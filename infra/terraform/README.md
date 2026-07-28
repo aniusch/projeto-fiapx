@@ -1,100 +1,94 @@
 # Terraform — EKS on AWS
 
-Provisions the AWS infrastructure to run FIAP X on Amazon EKS, tailored to the
-**AWS Academy Learner Lab**.
+Infrastructure to run FIAP X on Amazon EKS, tailored to the **AWS Academy
+Learner Lab**. Organized as bootstrap → reusable modules → shared → per-env roots.
 
-## What it creates
+```
+infra/terraform/
+├── bootstrap/     # creates the S3 state bucket + DynamoDB lock (LOCAL state, run once)
+├── modules/       # reusable building blocks
+│   ├── network/   #   VPC, public subnets, IGW, routes
+│   ├── eks/       #   cluster, node group, add-ons
+│   ├── rds/       #   PostgreSQL + security group
+│   ├── ecr/       #   image repositories
+│   └── storage/   #   S3 videos bucket
+├── shared/        # account-wide root: ECR (one registry for all environments)
+└── envs/
+    └── lab/       # the AWS Academy environment: network + eks + rds + storage
+```
 
-| Resource | Notes |
-| -------- | ----- |
-| VPC + 2 public subnets + IGW | No NAT gateway (saves Learner Lab budget); nodes get public IPs |
-| EKS cluster | Uses `LabRole`; creator gets cluster-admin via EKS access entries |
-| Managed node group | `LabRole`, on-demand `t3.medium` ×2 (autoscales to 4) |
-| Add-ons | vpc-cni, kube-proxy, coredns, aws-ebs-csi-driver (node-role, no IRSA) |
-| RDS PostgreSQL | Private, reachable only from the cluster security group |
-| ECR repos | `fiapx/gateway`, `fiapx/worker`, `fiapx/notifier` |
-| S3 bucket | Video storage, encrypted, public access blocked, CORS for presigned URLs |
-
-Redis, RabbitMQ, and Mailpit run **in-cluster** (see [`../k8s`](../k8s)); RDS and
-S3 are managed.
+Each of `bootstrap`, `shared`, and `envs/lab` is a **separate root** with its own
+state. Modules are never applied directly — the roots compose them.
 
 ## AWS Academy Learner Lab caveats
 
-- **No IAM role creation.** Everything reuses the pre-provisioned **`LabRole`**
-  for the control plane and nodes. Consequently **IRSA is not used** — pods rely
-  on the node role. On a normal account, create dedicated roles and set
-  `lab_role_name` accordingly.
-- **Region is `us-east-1`.** Learner Lab only allows this region.
-- **Credentials rotate (~4h).** Get them from the lab's *AWS Details → CLI* and
-  put them in `~/.aws/credentials` (they include a **session token**). Re-fetch
-  when they expire.
-- **Budget is small.** EKS control plane, nodes, and RDS all bill hourly —
-  `terraform destroy` when you're done, and don't leave it running overnight.
-- **State bucket** lives in S3 (see below); it survives across lab sessions.
+- **No IAM role creation** → cluster and nodes reuse **`LabRole`** (a variable);
+  **IRSA is not used**, add-ons run on the node role.
+- **Region is `us-east-1`**; credentials rotate (~4h) and include a session token.
+- **Budget is small** → no NAT gateways (public subnets), on-demand nodes;
+  `terraform destroy` when done.
 
-## Prerequisites
+## Deploy order
 
-`terraform >= 1.5`, `aws` CLI, `kubectl`, `docker`, and valid lab credentials
-(`aws sts get-caller-identity` should succeed).
-
-## Deploy
+Credentials must be configured first (`aws sts get-caller-identity` succeeds).
 
 ```bash
 cd infra/terraform
 
-# 1) One-time: create the remote-state bucket + lock table.
-REGION=us-east-1 BUCKET=fiapx-tfstate-<account-id> ./scripts/bootstrap-state.sh
+# 1) Bootstrap remote state (once per account). Uses local state.
+cd bootstrap
+terraform init
+terraform apply -var "state_bucket_name=fiapx-tfstate-$(aws sts get-caller-identity --query Account --output text)"
+cd ..
+
+# 2) Shared account resources (ECR). Copy the printed backend values into backend.hcl.
+cd shared
 cp backend.hcl.example backend.hcl   # fill in the bucket name
-
-# 2) Init with the backend config.
 terraform init -backend-config=backend.hcl
+terraform apply
+cd ..
 
-# 3) Provide the DB password out-of-band (never commit it).
+# 3) The lab environment (VPC, EKS, RDS, S3).
+cd envs/lab
+cp backend.hcl.example backend.hcl   # fill in the bucket name
+terraform init -backend-config=backend.hcl
 export TF_VAR_db_password='choose-a-strong-password'
-
-# 4) Review and apply.
-terraform plan
 terraform apply
 
-# 5) Point kubectl at the new cluster.
+# 4) Configure kubectl and push images.
 $(terraform output -raw kubeconfig_command)
-
-# 6) Push images to ECR (from a machine with lab creds).
+cd ../..
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text) \
   REGION=us-east-1 ./scripts/push-images-to-ecr.sh
 ```
 
-`terraform output` then gives you the RDS endpoint, ECR URLs, and S3 bucket to
-plug into the Kubernetes deployment.
+`terraform output` in `envs/lab` gives the RDS endpoint and S3 bucket; in `shared`
+it gives the ECR URLs — all needed to wire the Kubernetes deployment.
 
-## Wiring the app (next step)
+## Adding another environment
 
-The Kubernetes manifests in [`../k8s`](../k8s) target an all-in-cluster setup. An
-**AWS overlay** is needed to: drop the in-cluster Postgres and point
-`POSTGRES_DSN` at RDS; set `S3_ENDPOINT=s3.us-east-1.amazonaws.com`,
-`S3_USE_SSL=true`, `S3_REGION`, and the bucket; and switch the image names to the
-ECR URLs. (Not included here yet — ask and it can be generated.)
+Copy `envs/lab` to `envs/dev`, change the backend `key` (e.g.
+`envs/dev/terraform.tfstate`) and any variable values, and re-init. The modules
+and `shared` ECR are reused unchanged.
 
-### S3 credentials for pods — read this
+## Wiring the app & the pod→S3 credential note
 
-Because Learner Lab blocks IRSA, pods can't get a scoped IAM role. Two options:
+The Kubernetes manifests in [`../k8s`](../k8s) target an all-in-cluster setup; an
+**AWS overlay** is still needed to point `POSTGRES_DSN` at RDS, set the real S3
+endpoint/region/bucket, and switch image names to ECR. (Not included yet — ask.)
 
-1. **Inject the lab's temporary credentials as a Secret** (simplest to get
-   working): put `S3_ACCESS_KEY`, `S3_SECRET_KEY`, **and the session token** into
-   a Kubernetes Secret. Note the current app passes an empty session token to the
-   S3 client, so this needs a small code change to read `S3_SESSION_TOKEN`. These
-   creds rotate ~4h, so the Secret must be refreshed each session.
-2. **Use the node role via IMDS**: `LabRole` already has S3 access. The app would
-   use the AWS default credential chain (empty static keys), and the node group's
-   IMDS hop limit must allow pod access. This avoids rotating secrets but needs
-   both an app change and a launch-template tweak.
-
-Ask if you want the storage client updated to support either path.
+Because Learner Lab blocks IRSA, pods can't get a scoped IAM role for S3. Either
+inject the lab's temporary credentials (access key + secret + **session token**)
+as a Secret — which needs a small app change to read `S3_SESSION_TOKEN` — or use
+the node role via IMDS. See the details below and ask if you want the storage
+client updated.
 
 ## Teardown
 
-```bash
-terraform destroy
-```
+Destroy in reverse: `envs/lab`, then `shared`, then (optionally) `bootstrap`.
 
-Delete the state bucket/lock table separately if you no longer need remote state.
+```bash
+cd envs/lab && terraform destroy && cd ../..
+cd shared   && terraform destroy && cd ..
+# bootstrap last, only if you no longer need remote state
+```

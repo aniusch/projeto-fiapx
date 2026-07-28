@@ -1,14 +1,12 @@
 # Copy to terraform.tfvars and adjust. Do NOT commit terraform.tfvars.
-# Prefer passing the DB password via the environment instead:
+# Prefer passing the DB password via the environment:
 #   export TF_VAR_db_password='...'
 
 region             = "us-east-1"
 project            = "fiapx"
 cluster_name       = "fiapx"
 kubernetes_version = "1.30"
-
-# AWS Academy Learner Lab: keep this as "LabRole".
-lab_role_name = "LabRole"
+lab_role_name      = "LabRole"
 
 node_instance_type = "t3.medium"
 node_desired_size  = 2
@@ -17,4 +15,4 @@ node_max_size      = 4
 
 db_engine_version = "16.4"
 db_instance_class = "db.t3.micro"
-# db_password     = "set-me-via-TF_VAR_db_password-instead"
+# db_password     = "set-via-TF_VAR_db_password-instead"

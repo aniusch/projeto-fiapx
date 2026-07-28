@@ -1,10 +1,7 @@
-# Copy to backend.hcl and fill in, then:
+# Copy to backend.hcl, fill in the bucket, then:
 #   terraform init -backend-config=backend.hcl
-#
-# Create the bucket and lock table first with scripts/bootstrap-state.sh.
-
 bucket         = "fiapx-tfstate-REPLACE_WITH_ACCOUNT_ID"
-key            = "eks/terraform.tfstate"
+key            = "envs/lab/terraform.tfstate"
 region         = "us-east-1"
 dynamodb_table = "fiapx-tflock"
 encrypt        = true

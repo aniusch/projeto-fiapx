@@ -1,0 +1,4 @@
+# Copy to terraform.tfvars (do not commit).
+region            = "us-east-1"
+state_bucket_name = "fiapx-tfstate-REPLACE_WITH_ACCOUNT_ID"
+lock_table_name   = "fiapx-tflock"
