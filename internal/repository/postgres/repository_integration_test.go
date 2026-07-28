@@ -16,9 +16,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gabrielschuina/projeto-fiapx/internal/domain"
-	"github.com/gabrielschuina/projeto-fiapx/internal/platform"
-	"github.com/gabrielschuina/projeto-fiapx/internal/repository/postgres"
+	"github.com/aniusch/projeto-fiapx/internal/domain"
+	"github.com/aniusch/projeto-fiapx/internal/platform"
+	"github.com/aniusch/projeto-fiapx/internal/repository/postgres"
 )
 
 func dsn() string {

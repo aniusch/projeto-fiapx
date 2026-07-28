@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/gabrielschuina/projeto-fiapx/internal/domain"
+	"github.com/aniusch/projeto-fiapx/internal/domain"
 )
 
 // VideoRepository persists and retrieves video jobs.

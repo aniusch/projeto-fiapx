@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/gabrielschuina/projeto-fiapx/internal/domain"
+	"github.com/aniusch/projeto-fiapx/internal/domain"
 )
 
 // ErrNotFound is returned when a lookup matches no row. Callers compare against

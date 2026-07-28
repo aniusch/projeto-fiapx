@@ -9,8 +9,8 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/gabrielschuina/projeto-fiapx/internal/config"
-	"github.com/gabrielschuina/projeto-fiapx/internal/platform"
+	"github.com/aniusch/projeto-fiapx/internal/config"
+	"github.com/aniusch/projeto-fiapx/internal/platform"
 )
 
 func main() {

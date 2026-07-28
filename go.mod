@@ -1,4 +1,4 @@
-module github.com/gabrielschuina/projeto-fiapx
+module github.com/aniusch/projeto-fiapx
 
 go 1.25
 
