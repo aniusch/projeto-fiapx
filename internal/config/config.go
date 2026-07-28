@@ -75,9 +75,13 @@ type StorageConfig struct {
 	PublicEndpoint string
 	Region         string
 	Bucket         string
-	AccessKey      string
-	SecretKey      string
-	UseSSL         bool
+	// AccessKey/SecretKey are static credentials. Leave AccessKey empty to use
+	// the AWS default credential chain instead (e.g. the EKS node role via IMDS),
+	// which is how the app authenticates to S3 on AWS without stored keys.
+	AccessKey    string
+	SecretKey    string
+	SessionToken string // for temporary credentials (STS); optional
+	UseSSL       bool
 }
 
 // JWTConfig configures token signing and lifetime.
@@ -131,6 +135,7 @@ func Load() (Config, error) {
 			Bucket:         l.str("S3_BUCKET", "fiapx-videos"),
 			AccessKey:      l.str("S3_ACCESS_KEY", "minioadmin"),
 			SecretKey:      l.str("S3_SECRET_KEY", "minioadmin"),
+			SessionToken:   l.str("S3_SESSION_TOKEN", ""),
 			UseSSL:         l.boolean("S3_USE_SSL", false),
 		},
 		JWT: JWTConfig{
