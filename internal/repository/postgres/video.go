@@ -49,7 +49,7 @@ func (r *VideoRepository) GetByID(ctx context.Context, id uuid.UUID) (domain.Vid
 	row := r.pool.QueryRow(ctx, q, id)
 	v, err := scanVideo(row.Scan)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Video{}, ErrNotFound
+		return domain.Video{}, domain.ErrNotFound
 	}
 	return v, err
 }

@@ -72,6 +72,34 @@ go run ./cmd/worker     # boots and waits for jobs
 go run ./cmd/notifier   # boots and waits for events
 ```
 
+## API
+
+All video routes require a `Authorization: Bearer <token>` header. Auth routes are
+rate-limited per client IP (60 req/min).
+
+| Method | Path | Auth | Description |
+| ------ | ---- | ---- | ----------- |
+| `POST` | `/auth/register` | — | Create account `{email, password}` → `{token}` (201) |
+| `POST` | `/auth/login` | — | `{email, password}` → `{token}` (200) |
+| `POST` | `/videos` | ✓ | Multipart upload (`video` field) → stores source, enqueues job (202, `PENDING`) |
+| `GET` | `/videos` | ✓ | List the caller's videos with status + download URL |
+| `GET` | `/videos/:id` | ✓ | Single video status |
+| `GET` | `/videos/:id/download` | ✓ | Redirect to a presigned URL for the result zip (409 until `DONE`) |
+| `GET` | `/healthz` `/readyz` | — | Liveness / readiness (readiness pings Postgres + Redis) |
+
+Example:
+
+```bash
+TOKEN=$(curl -s -X POST localhost:8080/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"me@example.com","password":"password123"}' | jq -r .token)
+
+curl -X POST localhost:8080/videos \
+  -H "Authorization: Bearer $TOKEN" -F "video=@myclip.mp4"
+
+curl localhost:8080/videos -H "Authorization: Bearer $TOKEN"
+```
+
 ## Tests
 
 ```bash

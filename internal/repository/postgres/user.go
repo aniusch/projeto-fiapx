@@ -9,14 +9,14 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/aniusch/projeto-fiapx/internal/domain"
 )
 
-// ErrNotFound is returned when a lookup matches no row. Callers compare against
-// it with errors.Is instead of poking at driver-specific error values.
-var ErrNotFound = errors.New("not found")
+// uniqueViolation is the Postgres SQLSTATE code for a unique-constraint breach.
+const uniqueViolation = "23505"
 
 // UserRepository persists and retrieves users.
 type UserRepository struct {
@@ -39,6 +39,12 @@ func (r *UserRepository) Create(ctx context.Context, u *domain.User) error {
 	err := r.pool.QueryRow(ctx, q, u.Email, u.PasswordHash).
 		Scan(&u.ID, &u.CreatedAt)
 	if err != nil {
+		// Translate the driver-specific unique-violation into a domain error so
+		// callers can react without knowing about Postgres error codes.
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == uniqueViolation {
+			return domain.ErrDuplicate
+		}
 		return fmt.Errorf("create user: %w", err)
 	}
 	return nil
@@ -71,7 +77,7 @@ func (r *UserRepository) scanUser(row pgx.Row) (domain.User, error) {
 	var u domain.User
 	err := row.Scan(&u.ID, &u.Email, &u.PasswordHash, &u.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.User{}, ErrNotFound
+		return domain.User{}, domain.ErrNotFound
 	}
 	if err != nil {
 		return domain.User{}, fmt.Errorf("scan user: %w", err)

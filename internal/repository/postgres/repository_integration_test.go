@@ -11,6 +11,7 @@ package postgres_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"testing"
@@ -102,7 +103,7 @@ func TestGetByEmailNotFound(t *testing.T) {
 	defer pool.Close()
 
 	users := postgres.NewUserRepository(pool)
-	if _, err := users.GetByEmail(ctx, "does-not-exist@nowhere.local"); err != postgres.ErrNotFound {
+	if _, err := users.GetByEmail(ctx, "does-not-exist@nowhere.local"); !errors.Is(err, domain.ErrNotFound) {
 		t.Fatalf("expected ErrNotFound, got %v", err)
 	}
 }
