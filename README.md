@@ -86,6 +86,20 @@ go run ./cmd/notifier   # consumes failure events
 go run ./cmd/worker     # requires ffmpeg on the host (or set FFMPEG_PATH)
 ```
 
+## Kubernetes
+
+Manifests for the whole system live in [`deploy/k8s/`](./deploy/k8s/) (Kustomize):
+Deployments for the three services, in-cluster backing services, a migration Job,
+liveness/readiness probes, an Ingress, and a **HorizontalPodAutoscaler on the
+worker** (2→6 replicas on CPU) — the concrete "scale the CPU-heavy tier"
+demonstration. See [`deploy/k8s/README.md`](./deploy/k8s/README.md) for the deploy
+steps; the short version:
+
+```bash
+minikube image load fiapx/gateway:latest fiapx/worker:latest fiapx/notifier:latest
+kubectl kustomize --load-restrictor LoadRestrictionsNone deploy/k8s | kubectl apply -f -
+```
+
 ## Monitoring
 
 Every service exposes Prometheus metrics (`fiapx_<service>_<name>`): gateway HTTP

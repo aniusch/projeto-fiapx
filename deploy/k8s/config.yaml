@@ -1,0 +1,38 @@
+# Non-secret configuration shared by the services. Injected via envFrom, so each
+# key becomes an environment variable read by internal/config.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fiapx-config
+data:
+  APP_ENV: "production"
+  LOG_LEVEL: "info"
+  HTTP_PORT: "8080"
+  REDIS_ADDR: "redis:6379"
+  S3_ENDPOINT: "minio:9000"
+  S3_BUCKET: "fiapx-videos"
+  S3_USE_SSL: "false"
+  SMTP_HOST: "mailpit"
+  SMTP_PORT: "1025"
+  SMTP_FROM: "no-reply@fiapx.local"
+  WORK_DIR: "/tmp"
+  PROCESSING_FPS: "1"
+  WORKER_CONCURRENCY: "3"
+  METRICS_ADDR: ":9101"
+---
+# Secret values. In a real cluster these would come from a sealed-secret or an
+# external secret manager; the plaintext here is for the demo only.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: fiapx-secrets
+type: Opaque
+stringData:
+  POSTGRES_USER: "fiapx"
+  POSTGRES_PASSWORD: "fiapx"
+  POSTGRES_DB: "fiapx"
+  POSTGRES_DSN: "postgres://fiapx:fiapx@postgres:5432/fiapx?sslmode=disable"
+  RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
+  S3_ACCESS_KEY: "minioadmin"
+  S3_SECRET_KEY: "minioadmin"
+  JWT_SECRET: "change-me-in-production"

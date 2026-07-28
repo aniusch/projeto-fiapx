@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: worker }
+  template:
+    metadata:
+      labels: { app: worker }
+    spec:
+      containers:
+        - name: worker
+          image: fiapx/worker:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: { name: fiapx-config }
+            - secretRef: { name: fiapx-secrets }
+          ports:
+            - { containerPort: 9101, name: metrics }
+          # The worker has no API; its metrics server also exposes /healthz.
+          livenessProbe:
+            httpGet: { path: /healthz, port: 9101 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: { path: /healthz, port: 9101 }
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          # A CPU request is required for the HPA's CPU-utilization target to work.
+          resources:
+            requests: { cpu: 200m, memory: 128Mi }
+            limits: { cpu: "1", memory: 512Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: worker
+  labels: { app: worker }
+spec:
+  selector: { app: worker }
+  ports:
+    - { name: metrics, port: 9101, targetPort: 9101 }
+---
+# Scale the CPU-heavy worker tier automatically on load — the core "scalable
+# architecture" requirement. Needs metrics-server in the cluster.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: worker
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: worker
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

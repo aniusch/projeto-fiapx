@@ -1,0 +1,40 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Everything lands in the fiapx namespace.
+namespace: fiapx
+
+resources:
+  - namespace.yaml
+  - config.yaml
+  - postgres.yaml
+  - redis.yaml
+  - rabbitmq.yaml
+  - minio.yaml
+  - mailpit.yaml
+  - migrate-job.yaml
+  - gateway.yaml
+  - worker.yaml
+  - notifier.yaml
+
+# Generate the migrations ConfigMap from the repo's SQL files, so the migrate Job
+# always runs the current schema. Stable name (no hash suffix) keeps the Job's
+# volume reference simple.
+configMapGenerator:
+  - name: migrations
+    files:
+      - ../../migrations/0001_init.up.sql
+      - ../../migrations/0001_init.down.sql
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+# Pin image tags in one place. CI (Phase 9) publishes these; for local minikube
+# they are loaded with `minikube image load`.
+images:
+  - name: fiapx/gateway
+    newTag: latest
+  - name: fiapx/worker
+    newTag: latest
+  - name: fiapx/notifier
+    newTag: latest

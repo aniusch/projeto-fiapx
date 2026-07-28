@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notifier
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: notifier }
+  template:
+    metadata:
+      labels: { app: notifier }
+    spec:
+      containers:
+        - name: notifier
+          image: fiapx/notifier:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: { name: fiapx-config }
+            - secretRef: { name: fiapx-secrets }
+          ports:
+            - { containerPort: 9101, name: metrics }
+          livenessProbe:
+            httpGet: { path: /healthz, port: 9101 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: { path: /healthz, port: 9101 }
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests: { cpu: 25m, memory: 32Mi }
+            limits: { cpu: 250m, memory: 128Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notifier
+  labels: { app: notifier }
+spec:
+  selector: { app: notifier }
+  ports:
+    - { name: metrics, port: 9101, targetPort: 9101 }
