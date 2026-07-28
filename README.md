@@ -127,9 +127,15 @@ curl localhost:8080/videos -H "Authorization: Bearer $TOKEN"
 ```bash
 go build ./...                                       # compile everything
 go vet ./...                                          # static checks
-go test ./...                                         # unit tests
+go test ./...                                         # unit tests (no external deps)
 go test -tags=integration ./...                       # integration tests (needs compose up)
+go test -cover ./...                                  # with coverage
 ```
+
+Unit tests use in-memory fakes for the databases, broker, and object store, so
+they run anywhere. Integration tests (build tag `integration`) exercise the real
+Postgres, Redis, and SMTP from the compose stack; the ffmpeg pipeline test
+generates its own clip and skips automatically if ffmpeg isn't installed.
 
 > The real endpoints, queue consumers, and object-storage wiring arrive in
 > subsequent phases.
