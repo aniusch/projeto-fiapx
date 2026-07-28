@@ -23,6 +23,16 @@ type Config struct {
 	Storage  StorageConfig
 	JWT      JWTConfig
 	SMTP     SMTPConfig
+	Worker   WorkerConfig
+}
+
+// WorkerConfig configures the video-processing worker.
+type WorkerConfig struct {
+	FFmpegPath  string        // path/name of the ffmpeg binary
+	FPS         int           // frames to extract per second of video
+	WorkDir     string        // scratch directory for downloads/frames/zips
+	JobTimeout  time.Duration // max time to spend processing a single video
+	Concurrency int           // max videos processed in parallel per worker
 }
 
 // HTTPConfig configures the gateway's HTTP server.
@@ -113,6 +123,13 @@ func Load() (Config, error) {
 			Host: l.str("SMTP_HOST", "localhost"),
 			Port: l.int("SMTP_PORT", 1025),
 			From: l.str("SMTP_FROM", "no-reply@fiapx.local"),
+		},
+		Worker: WorkerConfig{
+			FFmpegPath:  l.str("FFMPEG_PATH", "ffmpeg"),
+			FPS:         l.int("PROCESSING_FPS", 1),
+			WorkDir:     l.str("WORK_DIR", os.TempDir()),
+			JobTimeout:  l.duration("JOB_TIMEOUT", 10*time.Minute),
+			Concurrency: l.int("WORKER_CONCURRENCY", 3),
 		},
 	}
 

@@ -67,10 +67,19 @@ Run the services on the host (dev defaults match the compose stack, so no `.env`
 is needed — copy [`.env.example`](./.env.example) to `.env` to customize):
 
 ```bash
-go run ./cmd/gateway    # :8080 — GET /healthz (liveness), GET /readyz (pings Postgres)
-go run ./cmd/worker     # boots and waits for jobs
+go run ./cmd/gateway    # :8080 — GET /healthz (liveness), GET /readyz (pings Postgres + Redis)
 go run ./cmd/notifier   # boots and waits for events
 ```
+
+The **worker** needs ffmpeg, so it runs as a container (ffmpeg baked into its
+image) and is started by `docker compose up -d`. Scale it horizontally with:
+
+```bash
+docker compose up -d --scale worker=3
+```
+
+To iterate on the worker locally instead, install ffmpeg and run
+`go run ./cmd/worker` (or set `FFMPEG_PATH`).
 
 ## API
 
