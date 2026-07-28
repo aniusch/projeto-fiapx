@@ -44,3 +44,9 @@ variable "node_disk_size" {
   type    = number
   default = 20
 }
+
+variable "node_imds_hop_limit" {
+  description = "IMDSv2 hop limit for nodes. 2 lets pods reach the metadata service and assume the node role (needed for S3 and ESO without IRSA)."
+  type        = number
+  default     = 2
+}

@@ -17,6 +17,36 @@ resource "aws_eks_cluster" "this" {
   }
 }
 
+# Launch template for the nodes. Its main job here is the metadata options:
+# IMDSv2 required, with a hop limit of 2 so that PODS (not just the host) can
+# reach the instance metadata and thus assume the node role. That is what lets
+# the app read S3 and the External Secrets Operator read Secrets Manager without
+# IRSA — which Learner Lab cannot provision. Disk config also moves here, since a
+# managed node group can't set disk_size when a launch template is supplied.
+resource "aws_launch_template" "nodes" {
+  name_prefix = "${var.cluster_name}-node-"
+
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = var.node_imds_hop_limit
+  }
+
+  block_device_mappings {
+    device_name = "/dev/xvda"
+    ebs {
+      volume_size = var.node_disk_size
+      volume_type = "gp3"
+      encrypted   = true
+    }
+  }
+
+  tag_specifications {
+    resource_type = "instance"
+    tags          = { Name = "${var.cluster_name}-node" }
+  }
+}
+
 resource "aws_eks_node_group" "this" {
   cluster_name    = aws_eks_cluster.this.name
   node_group_name = "${var.cluster_name}-ng"
@@ -26,7 +56,11 @@ resource "aws_eks_node_group" "this" {
   instance_types = [var.node_instance_type]
   capacity_type  = "ON_DEMAND"
   ami_type       = "AL2023_x86_64_STANDARD"
-  disk_size      = var.node_disk_size
+
+  launch_template {
+    id      = aws_launch_template.nodes.id
+    version = aws_launch_template.nodes.latest_version
+  }
 
   scaling_config {
     desired_size = var.node_desired_size

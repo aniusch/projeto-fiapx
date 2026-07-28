@@ -34,3 +34,8 @@ output "rds_database" {
 output "s3_bucket" {
   value = module.storage.bucket
 }
+
+output "app_secret_name" {
+  description = "AWS Secrets Manager secret consumed by the ESO ExternalSecret."
+  value       = aws_secretsmanager_secret.app.name
+}
