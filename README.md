@@ -46,8 +46,11 @@ docker-compose.yml    local infrastructure (Postgres, Redis, RabbitMQ, MinIO, Ma
 
 ## Documentation
 
-- [Architecture](./docs/architecture/) — C4 context/container, data model, runtime flow, deployment topology.
+- [**Architecture**](./docs/ARCHITECTURE.md) — the reviewer-facing overview (start here).
+- [Diagrams](./docs/architecture/) — C4 context/container, data model, runtime flow, deployment topology.
 - [Decision records](./docs/adr/) — why each major choice was made.
+- [Requirements traceability](./docs/requirements-traceability.md) — each requirement → where it's met.
+- [Demo script](./docs/demo-script.md) — run sheet for the ≤10-minute video.
 
 ## Running locally
 
