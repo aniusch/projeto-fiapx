@@ -25,3 +25,4 @@ alternatives rejected — not just *what* the code does. Six months later, that
 | [0005](./0005-object-storage-s3-minio.md) | Store media in S3-compatible object storage | Accepted |
 | [0006](./0006-datastores-postgres-redis.md) | Postgres for state, Redis for cache | Accepted |
 | [0007](./0007-deployment-compose-and-kubernetes.md) | Ship both Docker Compose and Kubernetes | Accepted |
+| [0008](./0008-observability-prometheus-grafana.md) | Observability with Prometheus and Grafana | Accepted |

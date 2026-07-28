@@ -9,8 +9,11 @@ import (
 	"os"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/aniusch/projeto-fiapx/internal/config"
 	"github.com/aniusch/projeto-fiapx/internal/messaging"
+	"github.com/aniusch/projeto-fiapx/internal/observability"
 	"github.com/aniusch/projeto-fiapx/internal/platform"
 	"github.com/aniusch/projeto-fiapx/internal/repository/postgres"
 	"github.com/aniusch/projeto-fiapx/internal/storage"
@@ -72,12 +75,18 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Expose Prometheus metrics on a small dedicated HTTP server.
+	metrics := observability.NewWorkerMetrics(prometheus.DefaultRegisterer)
+	metricsSrv := observability.StartMetricsServer(cfg.Metrics.Addr, logger)
+	defer observability.Shutdown(metricsSrv)
+
 	// --- Build the worker -------------------------------------------------
 	w := worker.New(worker.Deps{
 		Videos:  postgres.NewVideoRepository(pool),
 		Users:   postgres.NewUserRepository(pool),
 		Objects: objectStore,
 		Events:  messaging.NewPublisher(publishCh),
+		Metrics: metrics,
 		Config: worker.Config{
 			FFmpegPath: cfg.Worker.FFmpegPath,
 			FPS:        cfg.Worker.FPS,

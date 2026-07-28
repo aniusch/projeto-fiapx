@@ -6,17 +6,19 @@ story.
 
 ## Development — Docker Compose
 
-Infrastructure runs in containers; the Go services run on the host via `go run`
-during development (they connect to the containers on `localhost`).
+The whole system runs in the compose network: the three services are
+containerized (the worker's image includes ffmpeg), and Prometheus + Grafana
+provide monitoring. Only published ports are reachable from the host. Services
+can still be run individually on the host via `go run` for fast iteration.
 
 ```mermaid
 flowchart TB
-    subgraph host["Developer host (go run)"]
+    subgraph svc["services (containers)"]
         gw["gateway :8080"]
-        wk["worker"]
+        wk["worker (ffmpeg)"]
         nt["notifier"]
     end
-    subgraph net["docker compose network"]
+    subgraph infra["backing services"]
         pg[("Postgres :5432")]
         rd[("Redis :6379")]
         mq{{"RabbitMQ :5672 / UI :15672"}}
@@ -24,17 +26,17 @@ flowchart TB
         mp["Mailpit SMTP :1025 / UI :8025"]
         mig["migrate (one-shot)"]
     end
+    subgraph mon["monitoring"]
+        prom["Prometheus :9090"]
+        graf["Grafana :3000"]
+    end
 
-    gw --> pg
-    gw --> rd
-    gw --> mq
-    gw --> s3
-    wk --> pg
-    wk --> mq
-    wk --> s3
-    nt --> mq
-    nt --> mp
+    gw --> pg & rd & mq & s3
+    wk --> pg & mq & s3
+    nt --> mq & mp
     mig -. applies migrations .-> pg
+    prom -. scrapes /metrics .-> gw & wk & nt
+    graf --> prom
 ```
 
 ## Production — Kubernetes

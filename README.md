@@ -49,37 +49,50 @@ docker-compose.yml    local infrastructure (Postgres, Redis, RabbitMQ, MinIO, Ma
 
 ## Running locally
 
-Start the backing infrastructure (also runs the DB migrations):
+Bring up the whole system (backing services, the three app services, monitoring,
+and the DB migrations) with one command:
 
 ```bash
 docker compose up -d
 ```
 
-| Service   | URL |
-| --------- | --- |
-| Postgres  | `localhost:5432` (fiapx/fiapx) |
-| Redis     | `localhost:6379` |
-| RabbitMQ  | AMQP `localhost:5672` · UI [localhost:15672](http://localhost:15672) (guest/guest) |
-| MinIO     | API `localhost:9000` · console [localhost:9001](http://localhost:9001) (minioadmin/minioadmin) |
-| Mailpit   | SMTP `localhost:1025` · UI [localhost:8025](http://localhost:8025) |
+| Component  | URL |
+| ---------- | --- |
+| Gateway API | [localhost:8080](http://localhost:8080) |
+| Postgres   | `localhost:5432` (fiapx/fiapx) |
+| Redis      | `localhost:6379` |
+| RabbitMQ   | AMQP `localhost:5672` · UI [localhost:15672](http://localhost:15672) (guest/guest) |
+| MinIO      | API `localhost:9000` · console [localhost:9001](http://localhost:9001) (minioadmin/minioadmin) |
+| Mailpit    | SMTP `localhost:1025` · UI [localhost:8025](http://localhost:8025) |
+| Prometheus | [localhost:9090](http://localhost:9090) |
+| Grafana    | [localhost:3000](http://localhost:3000) (admin/admin) — "FIAP X — Overview" dashboard |
 
-Run the services on the host (dev defaults match the compose stack, so no `.env`
-is needed — copy [`.env.example`](./.env.example) to `.env` to customize):
-
-```bash
-go run ./cmd/gateway    # :8080 — GET /healthz (liveness), GET /readyz (pings Postgres + Redis)
-go run ./cmd/notifier   # boots and waits for events
-```
-
-The **worker** needs ffmpeg, so it runs as a container (ffmpeg baked into its
-image) and is started by `docker compose up -d`. Scale it horizontally with:
+Scale the CPU-heavy worker horizontally:
 
 ```bash
 docker compose up -d --scale worker=3
 ```
 
-To iterate on the worker locally instead, install ffmpeg and run
-`go run ./cmd/worker` (or set `FFMPEG_PATH`).
+### Running a service on the host
+
+For fast iteration you can run a single service on the host instead of its
+container (dev defaults match the compose stack, so no `.env` is needed — copy
+[`.env.example`](./.env.example) to `.env` to customize). Stop the container
+first to free its port, e.g. `docker compose stop gateway`, then:
+
+```bash
+go run ./cmd/gateway    # :8080 — GET /healthz, /readyz, /metrics
+go run ./cmd/notifier   # consumes failure events
+go run ./cmd/worker     # requires ffmpeg on the host (or set FFMPEG_PATH)
+```
+
+## Monitoring
+
+Every service exposes Prometheus metrics (`fiapx_<service>_<name>`): gateway HTTP
+rate/latency, worker jobs-processed-by-outcome, job-duration histogram and
+in-flight gauge, and notifier deliveries. Prometheus scrapes them and Grafana
+renders the provisioned dashboard out of the box at
+[localhost:3000](http://localhost:3000).
 
 ## API
 

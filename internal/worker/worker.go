@@ -18,6 +18,7 @@ import (
 
 	"github.com/aniusch/projeto-fiapx/internal/domain"
 	"github.com/aniusch/projeto-fiapx/internal/messaging"
+	"github.com/aniusch/projeto-fiapx/internal/observability"
 	"github.com/aniusch/projeto-fiapx/internal/processing"
 )
 
@@ -53,12 +54,13 @@ type Config struct {
 	JobTimeout time.Duration
 }
 
-// Deps groups the worker's collaborators.
+// Deps groups the worker's collaborators. Metrics may be nil (e.g. in tests).
 type Deps struct {
 	Videos  VideoStore
 	Users   UserStore
 	Objects ObjectStore
 	Events  EventPublisher
+	Metrics *observability.WorkerMetrics
 	Config  Config
 }
 
@@ -69,6 +71,7 @@ type Worker struct {
 	users   UserStore
 	objects ObjectStore
 	events  EventPublisher
+	metrics *observability.WorkerMetrics
 	cfg     Config
 }
 
@@ -79,6 +82,7 @@ func New(d Deps) *Worker {
 		users:   d.Users,
 		objects: d.Objects,
 		events:  d.Events,
+		metrics: d.Metrics,
 		cfg:     d.Config,
 	}
 }
@@ -95,29 +99,40 @@ func New(d Deps) *Worker {
 // result object uses a deterministic key so reprocessing overwrites rather than
 // duplicates.
 func (w *Worker) Handle(ctx context.Context, job messaging.VideoJob) error {
+	w.metrics.JobStarted()
+	start := time.Now()
+	outcome, err := w.process(ctx, job)
+	w.metrics.JobFinished(outcome, time.Since(start).Seconds())
+	return err
+}
+
+// process does the real work and reports an outcome label alongside the error.
+// The outcome feeds the metrics; the error (non-nil only for infra failures)
+// drives the consumer's ack/requeue decision.
+func (w *Worker) process(ctx context.Context, job messaging.VideoJob) (outcome string, err error) {
 	video, err := w.videos.GetByID(ctx, job.VideoID)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
 			// The row is gone (e.g. user deleted). Nothing to do; don't retry.
 			slog.Warn("job references unknown video, dropping", "video_id", job.VideoID)
-			return nil
+			return "skipped", nil
 		}
-		return fmt.Errorf("load video: %w", err) // infra → retry
+		return "error", fmt.Errorf("load video: %w", err) // infra → retry
 	}
 
 	if video.Status == domain.StatusDone {
 		slog.Info("job already done, skipping", "video_id", job.VideoID)
-		return nil // idempotent skip
+		return "skipped", nil // idempotent skip
 	}
 
 	if err := w.videos.MarkProcessing(ctx, job.VideoID); err != nil {
-		return fmt.Errorf("mark processing: %w", err) // infra → retry
+		return "error", fmt.Errorf("mark processing: %w", err) // infra → retry
 	}
 
 	// Per-job scratch directory, cleaned up regardless of outcome.
 	jobDir, err := os.MkdirTemp(w.cfg.WorkDir, "job-"+job.VideoID.String()+"-")
 	if err != nil {
-		return fmt.Errorf("create work dir: %w", err)
+		return "error", fmt.Errorf("create work dir: %w", err)
 	}
 	defer os.RemoveAll(jobDir)
 
@@ -125,25 +140,34 @@ func (w *Worker) Handle(ctx context.Context, job messaging.VideoJob) error {
 	if err := w.download(ctx, job.SourceKey, srcPath); err != nil {
 		// Treat a missing/unreadable source as a processing failure: retrying
 		// will not conjure the bytes back.
-		return w.fail(ctx, job, "could not download source video: "+err.Error())
+		return w.failOutcome(ctx, job, "could not download source video: "+err.Error())
 	}
 
 	result, err := processing.Run(ctx, w.cfg.FFmpegPath, srcPath, jobDir, w.cfg.FPS)
 	if err != nil {
-		return w.fail(ctx, job, "video processing failed: "+err.Error())
+		return w.failOutcome(ctx, job, "video processing failed: "+err.Error())
 	}
 
 	zipKey := fmt.Sprintf("results/%s.zip", job.VideoID)
 	if err := w.uploadZip(ctx, zipKey, result.ZipPath); err != nil {
-		return fmt.Errorf("upload result: %w", err) // infra → retry
+		return "error", fmt.Errorf("upload result: %w", err) // infra → retry
 	}
 
 	if err := w.videos.MarkDone(ctx, job.VideoID, zipKey, result.FrameCount); err != nil {
-		return fmt.Errorf("mark done: %w", err) // infra → retry
+		return "error", fmt.Errorf("mark done: %w", err) // infra → retry
 	}
 
 	slog.Info("video processed", "video_id", job.VideoID, "frames", result.FrameCount)
-	return nil
+	return "done", nil
+}
+
+// failOutcome records a processing failure and maps it to a metrics outcome. If
+// even recording the failure fails, it surfaces an infra error so the job retries.
+func (w *Worker) failOutcome(ctx context.Context, job messaging.VideoJob, reason string) (string, error) {
+	if err := w.fail(ctx, job, reason); err != nil {
+		return "error", err
+	}
+	return "failed", nil
 }
 
 // fail records a processing failure and notifies the user. It returns nil so the

@@ -28,7 +28,7 @@ func (f *fakeMailer) Send(to, subject, body string) error {
 
 func TestHandleSendsEmail(t *testing.T) {
 	m := &fakeMailer{}
-	n := New(m)
+	n := New(m, nil)
 
 	event := messaging.VideoFailedEvent{
 		VideoID:      uuid.New(),
@@ -57,7 +57,7 @@ func TestHandleSendsEmail(t *testing.T) {
 
 func TestHandleSkipsWhenNoEmail(t *testing.T) {
 	m := &fakeMailer{}
-	n := New(m)
+	n := New(m, nil)
 
 	if err := n.Handle(context.Background(), messaging.VideoFailedEvent{VideoID: uuid.New()}); err != nil {
 		t.Fatalf("Handle: %v", err)
@@ -69,7 +69,7 @@ func TestHandleSkipsWhenNoEmail(t *testing.T) {
 
 func TestHandlePropagatesSendError(t *testing.T) {
 	m := &fakeMailer{sendErr: errors.New("smtp down")}
-	n := New(m)
+	n := New(m, nil)
 
 	event := messaging.VideoFailedEvent{VideoID: uuid.New(), Email: "x@y.com"}
 	if err := n.Handle(context.Background(), event); err == nil {

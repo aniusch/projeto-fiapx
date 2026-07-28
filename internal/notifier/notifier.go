@@ -9,6 +9,7 @@ import (
 	"log/slog"
 
 	"github.com/aniusch/projeto-fiapx/internal/messaging"
+	"github.com/aniusch/projeto-fiapx/internal/observability"
 )
 
 // Mailer sends a plaintext email.
@@ -18,12 +19,13 @@ type Mailer interface {
 
 // Notifier turns failure events into emails.
 type Notifier struct {
-	mailer Mailer
+	mailer  Mailer
+	metrics *observability.NotifierMetrics // may be nil
 }
 
-// New builds a Notifier.
-func New(mailer Mailer) *Notifier {
-	return &Notifier{mailer: mailer}
+// New builds a Notifier. metrics may be nil (e.g. in tests).
+func New(mailer Mailer, metrics *observability.NotifierMetrics) *Notifier {
+	return &Notifier{mailer: mailer, metrics: metrics}
 }
 
 // Handle emails the owner about a failed video. An event without an address is
@@ -31,6 +33,7 @@ func New(mailer Mailer) *Notifier {
 func (n *Notifier) Handle(_ context.Context, event messaging.VideoFailedEvent) error {
 	if event.Email == "" {
 		slog.Warn("failure event has no recipient; skipping", "video_id", event.VideoID)
+		n.metrics.Notification("skipped")
 		return nil
 	}
 
@@ -46,9 +49,11 @@ func (n *Notifier) Handle(_ context.Context, event messaging.VideoFailedEvent) e
 	)
 
 	if err := n.mailer.Send(event.Email, subject, body); err != nil {
+		n.metrics.Notification("failed")
 		return fmt.Errorf("send notification: %w", err)
 	}
 
+	n.metrics.Notification("sent")
 	slog.Info("failure notification sent", "video_id", event.VideoID, "to", event.Email)
 	return nil
 }

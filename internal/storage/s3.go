@@ -17,22 +17,44 @@ import (
 
 // Client talks to a single bucket.
 type Client struct {
-	mc     *minio.Client
-	bucket string
+	mc      *minio.Client // internal client for uploads/downloads
+	presign *minio.Client // client whose endpoint is the one download URLs point at
+	bucket  string
 }
 
 // New builds a storage client from configuration. The same code path serves
 // MinIO and S3 — only the endpoint, credentials, and TLS flag differ.
+//
+// When PublicEndpoint differs from Endpoint, a second client is built for
+// signing download URLs: presigned URLs embed and are signed over the endpoint
+// host, so they must be signed with the host the *client* will actually call.
 func New(cfg config.StorageConfig) (*Client, error) {
-	mc, err := minio.New(cfg.Endpoint, &minio.Options{
+	mc, err := newMinioClient(cfg.Endpoint, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	presign := mc
+	if cfg.PublicEndpoint != "" && cfg.PublicEndpoint != cfg.Endpoint {
+		presign, err = newMinioClient(cfg.PublicEndpoint, cfg)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &Client{mc: mc, presign: presign, bucket: cfg.Bucket}, nil
+}
+
+func newMinioClient(endpoint string, cfg config.StorageConfig) (*minio.Client, error) {
+	c, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
 		Secure: cfg.UseSSL,
 		Region: cfg.Region,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("create minio client: %w", err)
+		return nil, fmt.Errorf("create minio client for %q: %w", endpoint, err)
 	}
-	return &Client{mc: mc, bucket: cfg.Bucket}, nil
+	return c, nil
 }
 
 // EnsureBucket creates the bucket if it does not already exist. Handy when
@@ -76,7 +98,7 @@ func (c *Client) Get(ctx context.Context, key string) (io.ReadCloser, error) {
 // PresignGet returns a time-limited URL that lets the holder download the object
 // directly from object storage, without proxying the bytes through our service.
 func (c *Client) PresignGet(ctx context.Context, key string, expiry time.Duration) (string, error) {
-	u, err := c.mc.PresignedGetObject(ctx, c.bucket, key, expiry, nil)
+	u, err := c.presign.PresignedGetObject(ctx, c.bucket, key, expiry, nil)
 	if err != nil {
 		return "", fmt.Errorf("presign object %q: %w", key, err)
 	}

@@ -1,0 +1,22 @@
+global:
+  scrape_interval: 10s
+  evaluation_interval: 10s
+
+scrape_configs:
+  # The gateway exposes /metrics on its main HTTP port.
+  - job_name: gateway
+    static_configs:
+      - targets: ["gateway:8080"]
+
+  # The worker and notifier expose /metrics on a dedicated metrics port.
+  - job_name: worker
+    static_configs:
+      - targets: ["worker:9101"]
+
+  - job_name: notifier
+    static_configs:
+      - targets: ["notifier:9101"]
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

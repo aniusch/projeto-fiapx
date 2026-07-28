@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/aniusch/projeto-fiapx/internal/auth"
 	"github.com/aniusch/projeto-fiapx/internal/config"
@@ -107,6 +109,11 @@ func main() {
 	}
 	router := gin.New()
 	router.Use(gin.Recovery())
+
+	// Instrument every request, and expose the metrics for Prometheus to scrape.
+	httpMetrics := gateway.NewHTTPMetrics(prometheus.DefaultRegisterer)
+	router.Use(httpMetrics.Middleware())
+	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	router.GET("/healthz", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})

@@ -24,6 +24,13 @@ type Config struct {
 	JWT      JWTConfig
 	SMTP     SMTPConfig
 	Worker   WorkerConfig
+	Metrics  MetricsConfig
+}
+
+// MetricsConfig configures the Prometheus metrics endpoint for services that
+// don't otherwise run an HTTP server (worker, notifier).
+type MetricsConfig struct {
+	Addr string
 }
 
 // WorkerConfig configures the video-processing worker.
@@ -60,12 +67,17 @@ type RabbitMQConfig struct {
 
 // StorageConfig configures the S3-compatible object store (MinIO in dev, S3 in prod).
 type StorageConfig struct {
-	Endpoint  string
-	Region    string
-	Bucket    string
-	AccessKey string
-	SecretKey string
-	UseSSL    bool
+	Endpoint string // internal endpoint used for uploads/downloads by the services
+	// PublicEndpoint is the host clients can reach, used when signing download
+	// URLs. It differs from Endpoint when the service talks to storage over an
+	// internal network name (e.g. "minio:9000") but browsers use "localhost:9000".
+	// Empty means "same as Endpoint".
+	PublicEndpoint string
+	Region         string
+	Bucket         string
+	AccessKey      string
+	SecretKey      string
+	UseSSL         bool
 }
 
 // JWTConfig configures token signing and lifetime.
@@ -113,12 +125,13 @@ func Load() (Config, error) {
 			URL: l.str("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"),
 		},
 		Storage: StorageConfig{
-			Endpoint:  l.str("S3_ENDPOINT", "localhost:9000"),
-			Region:    l.str("S3_REGION", "us-east-1"),
-			Bucket:    l.str("S3_BUCKET", "fiapx-videos"),
-			AccessKey: l.str("S3_ACCESS_KEY", "minioadmin"),
-			SecretKey: l.str("S3_SECRET_KEY", "minioadmin"),
-			UseSSL:    l.boolean("S3_USE_SSL", false),
+			Endpoint:       l.str("S3_ENDPOINT", "localhost:9000"),
+			PublicEndpoint: l.str("S3_PUBLIC_ENDPOINT", ""),
+			Region:         l.str("S3_REGION", "us-east-1"),
+			Bucket:         l.str("S3_BUCKET", "fiapx-videos"),
+			AccessKey:      l.str("S3_ACCESS_KEY", "minioadmin"),
+			SecretKey:      l.str("S3_SECRET_KEY", "minioadmin"),
+			UseSSL:         l.boolean("S3_USE_SSL", false),
 		},
 		JWT: JWTConfig{
 			Secret: l.str("JWT_SECRET", "dev-insecure-secret-change-me"),
@@ -138,6 +151,9 @@ func Load() (Config, error) {
 			WorkDir:     l.str("WORK_DIR", os.TempDir()),
 			JobTimeout:  l.duration("JOB_TIMEOUT", 10*time.Minute),
 			Concurrency: l.int("WORKER_CONCURRENCY", 3),
+		},
+		Metrics: MetricsConfig{
+			Addr: l.str("METRICS_ADDR", ":9101"),
 		},
 	}
 

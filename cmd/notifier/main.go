@@ -6,10 +6,13 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/aniusch/projeto-fiapx/internal/config"
 	"github.com/aniusch/projeto-fiapx/internal/mail"
 	"github.com/aniusch/projeto-fiapx/internal/messaging"
 	"github.com/aniusch/projeto-fiapx/internal/notifier"
+	"github.com/aniusch/projeto-fiapx/internal/observability"
 	"github.com/aniusch/projeto-fiapx/internal/platform"
 )
 
@@ -45,7 +48,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	n := notifier.New(mail.NewSMTPMailer(cfg.SMTP))
+	metrics := observability.NewNotifierMetrics(prometheus.DefaultRegisterer)
+	metricsSrv := observability.StartMetricsServer(cfg.Metrics.Addr, logger)
+	defer observability.Shutdown(metricsSrv)
+
+	n := notifier.New(mail.NewSMTPMailer(cfg.SMTP), metrics)
 
 	logger.Info("notifier starting", "smtp", cfg.SMTP.Host, "from", cfg.SMTP.From)
 
