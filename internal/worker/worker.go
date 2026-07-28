@@ -140,12 +140,14 @@ func (w *Worker) process(ctx context.Context, job messaging.VideoJob) (outcome s
 	if err := w.download(ctx, job.SourceKey, srcPath); err != nil {
 		// Treat a missing/unreadable source as a processing failure: retrying
 		// will not conjure the bytes back.
-		return w.failOutcome(ctx, job, "could not download source video: "+err.Error())
+		return w.failOutcome(ctx, job,
+			"Não foi possível recuperar o vídeo enviado. Por favor, tente enviá-lo novamente.", err)
 	}
 
 	result, err := processing.Run(ctx, w.cfg.FFmpegPath, srcPath, jobDir, w.cfg.FPS)
 	if err != nil {
-		return w.failOutcome(ctx, job, "video processing failed: "+err.Error())
+		return w.failOutcome(ctx, job,
+			"O vídeo não pôde ser processado. Ele pode estar corrompido ou em um formato não suportado.", err)
 	}
 
 	zipKey := fmt.Sprintf("results/%s.zip", job.VideoID)
@@ -163,18 +165,23 @@ func (w *Worker) process(ctx context.Context, job messaging.VideoJob) (outcome s
 
 // failOutcome records a processing failure and maps it to a metrics outcome. If
 // even recording the failure fails, it surfaces an infra error so the job retries.
-func (w *Worker) failOutcome(ctx context.Context, job messaging.VideoJob, reason string) (string, error) {
-	if err := w.fail(ctx, job, reason); err != nil {
+func (w *Worker) failOutcome(ctx context.Context, job messaging.VideoJob, userMessage string, cause error) (string, error) {
+	if err := w.fail(ctx, job, userMessage, cause); err != nil {
 		return "error", err
 	}
 	return "failed", nil
 }
 
-// fail records a processing failure and notifies the user. It returns nil so the
-// message is acked — the failure is durably recorded and the user informed, so
-// re-running the doomed job would serve no purpose.
-func (w *Worker) fail(ctx context.Context, job messaging.VideoJob, reason string) error {
-	if err := w.videos.MarkFailed(ctx, job.VideoID, reason); err != nil {
+// fail records a processing failure and notifies the user. userMessage is the
+// friendly, user-facing text (stored and emailed); cause is the technical detail
+// (e.g. raw ffmpeg output) which is only logged, never shown to the user. It
+// returns nil so the message is acked — the failure is durably recorded and the
+// user informed, so re-running the doomed job would serve no purpose.
+func (w *Worker) fail(ctx context.Context, job messaging.VideoJob, userMessage string, cause error) error {
+	// Operators get the full technical cause in the logs.
+	slog.Warn("video failed", "video_id", job.VideoID, "message", userMessage, "cause", cause)
+
+	if err := w.videos.MarkFailed(ctx, job.VideoID, userMessage); err != nil {
 		// If we can't even record the failure, let the job retry.
 		return fmt.Errorf("mark failed: %w", err)
 	}
@@ -191,7 +198,7 @@ func (w *Worker) fail(ctx context.Context, job messaging.VideoJob, reason string
 		UserID:       job.UserID,
 		Email:        email,
 		OriginalName: job.OriginalName,
-		Reason:       reason,
+		Reason:       userMessage,
 		OccurredAt:   time.Now(),
 	}
 	if err := w.events.PublishVideoFailed(ctx, event); err != nil {
@@ -200,7 +207,6 @@ func (w *Worker) fail(ctx context.Context, job messaging.VideoJob, reason string
 		slog.Error("publish failure event", "error", err, "video_id", job.VideoID)
 	}
 
-	slog.Warn("video failed", "video_id", job.VideoID, "reason", reason)
 	return nil
 }
 

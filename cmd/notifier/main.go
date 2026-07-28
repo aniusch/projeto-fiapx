@@ -3,8 +3,10 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -29,7 +31,11 @@ func main() {
 	logger := platform.NewLogger(cfg.Env, cfg.LogLevel)
 	slog.SetDefault(logger)
 
-	rabbitConn, err := platform.NewRabbitConn(cfg.RabbitMQ.URL)
+	// Retry the broker connection within this window rather than crash-looping.
+	startupCtx, cancelStartup := context.WithTimeout(context.Background(), 90*time.Second)
+	defer cancelStartup()
+
+	rabbitConn, err := platform.NewRabbitConn(startupCtx, cfg.RabbitMQ.URL)
 	if err != nil {
 		logger.Error("connect rabbitmq", "error", err)
 		os.Exit(1)

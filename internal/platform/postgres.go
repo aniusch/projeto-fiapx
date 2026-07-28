@@ -12,8 +12,22 @@ import (
 // NewPostgresPool opens a connection pool to Postgres and verifies it with a
 // ping. A *pgxpool.Pool is safe for concurrent use by many goroutines — you
 // create one at startup and share it across all repositories, rather than
-// opening a connection per request.
+// opening a connection per request. It retries until Postgres is reachable or
+// ctx is cancelled, so a not-yet-ready database at startup doesn't crash-loop.
 func NewPostgresPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
+	var pool *pgxpool.Pool
+	err := retryConnect(ctx, "postgres", func(ctx context.Context) error {
+		p, err := openPostgresPool(ctx, dsn)
+		if err != nil {
+			return err
+		}
+		pool = p
+		return nil
+	})
+	return pool, err
+}
+
+func openPostgresPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	cfg, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
 		return nil, fmt.Errorf("parse postgres dsn: %w", err)

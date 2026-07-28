@@ -125,11 +125,21 @@ func TestHandleProcessingFailurePublishesEvent(t *testing.T) {
 	if !v.failed {
 		t.Fatal("expected MarkFailed to have been called")
 	}
-	if !strings.Contains(v.failReason, "processing failed") {
-		t.Errorf("unexpected fail reason: %q", v.failReason)
+	// The stored/emailed reason must be the friendly message, never raw ffmpeg
+	// output or the binary path.
+	if !strings.Contains(v.failReason, "não pôde ser processado") {
+		t.Errorf("expected a user-friendly reason, got %q", v.failReason)
+	}
+	for _, leak := range []string{"ffmpeg", "fork/exec", "/nonexistent"} {
+		if strings.Contains(v.failReason, leak) {
+			t.Errorf("user-facing reason leaks technical detail %q: %s", leak, v.failReason)
+		}
 	}
 	if len(events.published) != 1 {
 		t.Fatalf("expected 1 failure event, got %d", len(events.published))
+	}
+	if events.published[0].Reason != v.failReason {
+		t.Errorf("event reason %q != stored reason %q", events.published[0].Reason, v.failReason)
 	}
 	if events.published[0].Email != "owner@example.com" {
 		t.Errorf("event email = %q, want owner@example.com", events.published[0].Email)

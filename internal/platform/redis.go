@@ -2,7 +2,6 @@ package platform
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/redis/go-redis/v9"
 
@@ -11,7 +10,7 @@ import (
 
 // NewRedisClient connects to Redis and verifies it with a ping. Like the
 // Postgres pool, the returned client is safe for concurrent use and shared
-// across the whole process.
+// across the whole process. It retries until Redis is reachable or ctx is done.
 func NewRedisClient(ctx context.Context, cfg config.RedisConfig) (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     cfg.Addr,
@@ -19,9 +18,12 @@ func NewRedisClient(ctx context.Context, cfg config.RedisConfig) (*redis.Client,
 		DB:       cfg.DB,
 	})
 
-	if err := client.Ping(ctx).Err(); err != nil {
+	err := retryConnect(ctx, "redis", func(ctx context.Context) error {
+		return client.Ping(ctx).Err()
+	})
+	if err != nil {
 		_ = client.Close()
-		return nil, fmt.Errorf("ping redis: %w", err)
+		return nil, err
 	}
 	return client, nil
 }

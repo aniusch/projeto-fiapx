@@ -41,8 +41,9 @@ func main() {
 	logger := platform.NewLogger(cfg.Env, cfg.LogLevel)
 	slog.SetDefault(logger)
 
-	// Bound all startup connection work so we fail fast if a dependency is down.
-	startupCtx, cancelStartup := context.WithTimeout(context.Background(), 15*time.Second)
+	// Bound all startup connection work. Connectors retry within this window, so
+	// a dependency that is still coming up doesn't crash the process.
+	startupCtx, cancelStartup := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancelStartup()
 
 	// --- Dependencies -----------------------------------------------------
@@ -60,7 +61,7 @@ func main() {
 	}
 	defer redisClient.Close()
 
-	rabbitConn, err := platform.NewRabbitConn(cfg.RabbitMQ.URL)
+	rabbitConn, err := platform.NewRabbitConn(startupCtx, cfg.RabbitMQ.URL)
 	if err != nil {
 		logger.Error("connect rabbitmq", "error", err)
 		os.Exit(1)

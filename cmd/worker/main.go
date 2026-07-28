@@ -30,7 +30,9 @@ func main() {
 	logger := platform.NewLogger(cfg.Env, cfg.LogLevel)
 	slog.SetDefault(logger)
 
-	startupCtx, cancelStartup := context.WithTimeout(context.Background(), 15*time.Second)
+	// Connectors retry within this window, so a dependency still coming up
+	// doesn't crash the process.
+	startupCtx, cancelStartup := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancelStartup()
 
 	// --- Dependencies -----------------------------------------------------
@@ -47,7 +49,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	rabbitConn, err := platform.NewRabbitConn(cfg.RabbitMQ.URL)
+	rabbitConn, err := platform.NewRabbitConn(startupCtx, cfg.RabbitMQ.URL)
 	if err != nil {
 		logger.Error("connect rabbitmq", "error", err)
 		os.Exit(1)
