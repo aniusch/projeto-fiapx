@@ -1,7 +1,0 @@
-# Copy to backend.hcl, fill in the bucket, then:
-#   terraform init -backend-config=backend.hcl
-bucket         = "fiapx-tfstate-REPLACE_WITH_ACCOUNT_ID"
-key            = "shared/terraform.tfstate"
-region         = "us-east-1"
-dynamodb_table = "fiapx-tflock"
-encrypt        = true
