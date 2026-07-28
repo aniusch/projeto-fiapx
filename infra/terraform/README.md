@@ -66,24 +66,23 @@ Copy `envs/lab` to `envs/dev`, change the backend `key` (e.g.
 `envs/dev/terraform.tfstate`) and any variable values, and re-init. The modules
 are reused unchanged.
 
-## Wiring the app & the pod→S3 credential note
+## Deploying the app
 
-The Kubernetes manifests in [`../k8s`](../k8s) target an all-in-cluster setup; an
-**AWS overlay** is still needed to point `POSTGRES_DSN` at RDS, set the real S3
-endpoint/region/bucket, and switch image names to the public GHCR URLs. (Not
-included yet — ask.)
+The AWS deployment overlay is [`../k8s/overlays/aws`](../k8s/overlays/aws): it
+points Postgres at RDS, uses real S3 via the node role, pulls images from public
+GHCR, and sources secrets from AWS Secrets Manager through the **External Secrets
+Operator**. Follow that overlay's README (`terraform output` here provides the
+S3 bucket and RDS endpoint it needs).
 
-On AWS, Postgres → RDS and MinIO → S3, and the remaining in-cluster services
-(Redis, RabbitMQ, Mailpit) run **without PersistentVolumeClaims** — so the
-cluster provisions no EBS volumes and **no EBS CSI driver is installed**. Note the
-trade-off: a RabbitMQ pod restart drops any queued (not-yet-processed) jobs, which
-is fine for a demo. For durable RabbitMQ, add a PVC plus the `aws-ebs-csi-driver`
-add-on (it does work in Learner Lab via the node role).
+Because Learner Lab blocks IRSA, both ESO and the app authenticate with the **node
+role (`LabRole`) via IMDS** — enabled by the node launch template's IMDS hop limit
+of 2. So there are no static/rotating credentials in the cluster.
 
-Because Learner Lab blocks IRSA, pods can't get a scoped IAM role for S3. Either
-inject the lab's temporary credentials (access key + secret + **session token**)
-as a Secret — which needs a small app change to read `S3_SESSION_TOKEN` — or use
-the node role via IMDS. Ask if you want the storage client updated.
+The in-cluster services (Redis, RabbitMQ, Mailpit) run **without
+PersistentVolumeClaims**, so the cluster provisions no EBS volumes and **no EBS CSI
+driver is installed**. Trade-off: a RabbitMQ pod restart drops any queued jobs —
+fine for a demo. For durable RabbitMQ, add a PVC plus the `aws-ebs-csi-driver`
+add-on (it works in Learner Lab via the node role).
 
 ## Teardown
 

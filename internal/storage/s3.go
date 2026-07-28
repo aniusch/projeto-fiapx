@@ -57,13 +57,13 @@ func newMinioClient(endpoint string, cfg config.StorageConfig) (*minio.Client, e
 	return c, nil
 }
 
-// credentialsFor selects the S3 credential source. With no static access key we
-// fall back to the AWS default chain (environment, then EC2/EKS instance/node
-// role via IMDS) — this is how pods authenticate to S3 on EKS without any stored
-// keys. Otherwise static credentials are used, including a session token when the
+// credentialsFor selects the S3 credential source. With UseIAM (or no static
+// access key) we use the AWS default chain (environment, then EC2/EKS node role
+// via IMDS) — this is how pods authenticate to S3 on EKS without any stored keys.
+// Otherwise static credentials are used, including a session token when the
 // credentials are temporary.
 func credentialsFor(cfg config.StorageConfig) *credentials.Credentials {
-	if cfg.AccessKey == "" {
+	if cfg.UseIAM || cfg.AccessKey == "" {
 		return credentials.NewIAM("")
 	}
 	return credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, cfg.SessionToken)

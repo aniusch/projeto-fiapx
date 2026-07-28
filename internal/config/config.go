@@ -75,9 +75,11 @@ type StorageConfig struct {
 	PublicEndpoint string
 	Region         string
 	Bucket         string
-	// AccessKey/SecretKey are static credentials. Leave AccessKey empty to use
-	// the AWS default credential chain instead (e.g. the EKS node role via IMDS),
-	// which is how the app authenticates to S3 on AWS without stored keys.
+	// UseIAM selects the AWS default credential chain (e.g. the EKS node role via
+	// IMDS) instead of static keys — how the app authenticates to S3 on AWS
+	// without stored keys. An empty AccessKey has the same effect.
+	UseIAM bool
+	// AccessKey/SecretKey are static credentials (used unless UseIAM is set).
 	AccessKey    string
 	SecretKey    string
 	SessionToken string // for temporary credentials (STS); optional
@@ -133,6 +135,7 @@ func Load() (Config, error) {
 			PublicEndpoint: l.str("S3_PUBLIC_ENDPOINT", ""),
 			Region:         l.str("S3_REGION", "us-east-1"),
 			Bucket:         l.str("S3_BUCKET", "fiapx-videos"),
+			UseIAM:         l.boolean("S3_USE_IAM", false),
 			AccessKey:      l.str("S3_ACCESS_KEY", "minioadmin"),
 			SecretKey:      l.str("S3_SECRET_KEY", "minioadmin"),
 			SessionToken:   l.str("S3_SESSION_TOKEN", ""),

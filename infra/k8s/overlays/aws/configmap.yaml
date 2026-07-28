@@ -1,0 +1,32 @@
+# Non-secret configuration for the AWS environment. Postgres → RDS and S3 → real
+# AWS S3 (auth via the node role, so no keys here). POSTGRES_DSN and JWT_SECRET
+# come from the ESO-managed fiapx-secrets, not from here.
+#
+# Fill in S3_BUCKET from `terraform output s3_bucket` (and the region if not us-east-1).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fiapx-config
+data:
+  APP_ENV: "production"
+  LOG_LEVEL: "info"
+  HTTP_PORT: "8080"
+
+  REDIS_ADDR: "redis:6379"
+  RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
+
+  # Real AWS S3, authenticated via the EKS node role (no static keys).
+  S3_ENDPOINT: "s3.us-east-1.amazonaws.com"
+  S3_REGION: "us-east-1"
+  S3_BUCKET: "REPLACE_WITH_TF_S3_BUCKET"
+  S3_USE_SSL: "true"
+  S3_USE_IAM: "true"
+
+  SMTP_HOST: "mailpit"
+  SMTP_PORT: "1025"
+  SMTP_FROM: "no-reply@fiapx.local"
+
+  WORK_DIR: "/tmp"
+  PROCESSING_FPS: "1"
+  WORKER_CONCURRENCY: "3"
+  METRICS_ADDR: ":9101"

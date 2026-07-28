@@ -5,8 +5,12 @@ Manifests for running FIAP X on Kubernetes, wired together with
 
 The backing services (Postgres, Redis, RabbitMQ, MinIO, Mailpit) are deployed
 in-cluster for a self-contained demo. In a real environment you would point the
-services at managed offerings (RDS, ElastiCache, Amazon MQ, S3, SES) by editing
-`config.yaml` and removing the corresponding in-cluster manifests.
+services at managed offerings by editing `config.yaml` and removing the
+corresponding in-cluster manifests.
+
+> For the AWS/EKS deployment (RDS, real S3, GHCR images, and secrets via the
+> External Secrets Operator), use the overlay in
+> [`overlays/aws`](./overlays/aws/) instead of this base directly.
 
 ## What's here
 

@@ -1,0 +1,54 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: fiapx
+
+# The AWS environment: Postgres → RDS and MinIO → S3, so those in-cluster
+# manifests are intentionally NOT included. Redis, RabbitMQ, and Mailpit still run
+# in-cluster. Secrets come from AWS Secrets Manager via the External Secrets
+# Operator (secretstore + externalsecret below), replacing the plaintext Secret.
+resources:
+  - ../../namespace.yaml
+  - ../../redis.yaml
+  - ../../rabbitmq.yaml
+  - ../../mailpit.yaml
+  - ../../migrate-job.yaml
+  - ../../gateway.yaml
+  - ../../worker.yaml
+  - ../../notifier.yaml
+  - configmap.yaml
+  - secretstore.yaml
+  - externalsecret.yaml
+
+# Migrations for the one-shot migrate Job (same as the base).
+configMapGenerator:
+  - name: migrations
+    files:
+      - ../../../../migrations/0001_init.up.sql
+      - ../../../../migrations/0001_init.down.sql
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+# The base migrate Job waits for an in-cluster "postgres" Service, which doesn't
+# exist on AWS (the DB is RDS). Drop that init container; the Job's backoffLimit
+# retries migrate until RDS is reachable.
+patches:
+  - target:
+      kind: Job
+      name: migrate
+    patch: |
+      - op: remove
+        path: /spec/template/spec/initContainers
+
+# Pull the CI-built images straight from public GHCR (no ECR, no pull secret).
+images:
+  - name: fiapx/gateway
+    newName: ghcr.io/aniusch/projeto-fiapx-gateway
+    newTag: latest
+  - name: fiapx/worker
+    newName: ghcr.io/aniusch/projeto-fiapx-worker
+    newTag: latest
+  - name: fiapx/notifier
+    newName: ghcr.io/aniusch/projeto-fiapx-notifier
+    newTag: latest
