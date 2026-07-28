@@ -73,6 +73,13 @@ The Kubernetes manifests in [`../k8s`](../k8s) target an all-in-cluster setup; a
 endpoint/region/bucket, and switch image names to the public GHCR URLs. (Not
 included yet — ask.)
 
+On AWS, Postgres → RDS and MinIO → S3, and the remaining in-cluster services
+(Redis, RabbitMQ, Mailpit) run **without PersistentVolumeClaims** — so the
+cluster provisions no EBS volumes and **no EBS CSI driver is installed**. Note the
+trade-off: a RabbitMQ pod restart drops any queued (not-yet-processed) jobs, which
+is fine for a demo. For durable RabbitMQ, add a PVC plus the `aws-ebs-csi-driver`
+add-on (it does work in Learner Lab via the node role).
+
 Because Learner Lab blocks IRSA, pods can't get a scoped IAM role for S3. Either
 inject the lab's temporary credentials (access key + secret + **session token**)
 as a Secret — which needs a small app change to read `S3_SESSION_TOKEN` — or use

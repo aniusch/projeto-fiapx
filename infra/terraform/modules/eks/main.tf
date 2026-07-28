@@ -24,7 +24,7 @@ resource "aws_eks_node_group" "this" {
   subnet_ids      = var.subnet_ids
 
   instance_types = [var.node_instance_type]
-  capacity_type  = "ON_DEMAND" # Spot is often restricted in Learner Lab
+  capacity_type  = "ON_DEMAND"
   ami_type       = "AL2023_x86_64_STANDARD"
   disk_size      = var.node_disk_size
 
@@ -65,16 +65,6 @@ resource "aws_eks_addon" "kube_proxy" {
 resource "aws_eks_addon" "coredns" {
   cluster_name                = aws_eks_cluster.this.name
   addon_name                  = "coredns"
-  resolve_conflicts_on_create = "OVERWRITE"
-  resolve_conflicts_on_update = "OVERWRITE"
-
-  depends_on = [aws_eks_node_group.this]
-}
-
-# Lets in-cluster Redis/RabbitMQ PersistentVolumeClaims bind to EBS.
-resource "aws_eks_addon" "ebs_csi" {
-  cluster_name                = aws_eks_cluster.this.name
-  addon_name                  = "aws-ebs-csi-driver"
   resolve_conflicts_on_create = "OVERWRITE"
   resolve_conflicts_on_update = "OVERWRITE"
 
