@@ -1,5 +1,5 @@
-// Package platform holds small cross-cutting helpers shared by every service:
-// logging setup, signal handling, and (in later phases) metrics.
+// Package platform holds cross-cutting helpers shared by every service: logging,
+// signal handling, and the datastore/broker connectors.
 package platform
 
 import (
@@ -8,9 +8,8 @@ import (
 	"strings"
 )
 
-// NewLogger builds a structured logger. In production it emits JSON (easy for
-// log aggregators like the ELK stack to parse); in development it emits
-// human-readable text. The level string controls verbosity.
+// NewLogger builds a structured logger: JSON in production, human-readable text
+// otherwise, at the given level.
 func NewLogger(env, level string) *slog.Logger {
 	opts := &slog.HandlerOptions{Level: parseLevel(level)}
 

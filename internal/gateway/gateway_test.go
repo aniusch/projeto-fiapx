@@ -20,9 +20,7 @@ import (
 	"github.com/aniusch/projeto-fiapx/internal/messaging"
 )
 
-// --- In-memory fakes for the gateway's dependencies -----------------------
-// Because the Server depends on interfaces, tests inject these instead of a real
-// database, object store, and broker — no Docker required.
+// In-memory fakes for the gateway's dependencies.
 
 type fakeUsers struct{ byEmail map[string]domain.User }
 

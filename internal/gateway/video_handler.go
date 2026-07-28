@@ -16,8 +16,7 @@ import (
 	"github.com/aniusch/projeto-fiapx/internal/messaging"
 )
 
-// allowedVideoExts is the set of accepted upload extensions. A set (map to empty
-// struct) gives O(1) lookup and, with struct{} values, uses no memory per entry.
+// allowedVideoExts is the set of accepted upload extensions.
 var allowedVideoExts = map[string]struct{}{
 	".mp4": {}, ".avi": {}, ".mov": {}, ".mkv": {},
 	".wmv": {}, ".flv": {}, ".webm": {},

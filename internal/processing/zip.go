@@ -9,11 +9,8 @@ import (
 )
 
 // ZipFiles writes the given files into a single deflate-compressed zip archive
-// at zipPath. Each entry is stored under just its base name (no directory
-// structure), so the archive unpacks to a flat folder of frames.
-//
-// This is ported from the original monolith, but split out as a pure function so
-// it can be tested without ffmpeg or a real video.
+// at zipPath. Each entry is stored under just its base name, so the archive
+// unpacks to a flat folder of frames.
 func ZipFiles(files []string, zipPath string) error {
 	zipFile, err := os.Create(zipPath)
 	if err != nil {

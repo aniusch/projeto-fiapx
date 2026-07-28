@@ -6,11 +6,7 @@ import (
 	"github.com/aniusch/projeto-fiapx/internal/domain"
 )
 
-// --- Requests -------------------------------------------------------------
-//
-// The `binding` struct tags are validated by Gin (via go-playground/validator)
-// when we call ShouldBindJSON — declarative validation instead of hand-written
-// if-checks. A failing rule produces a 400 with a descriptive message.
+// Request bodies; the `binding` tags are validated by ShouldBindJSON.
 
 type registerRequest struct {
 	Email    string `json:"email" binding:"required,email"`
@@ -21,8 +17,6 @@ type loginRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
 }
-
-// --- Responses ------------------------------------------------------------
 
 type authResponse struct {
 	Token string `json:"token"`
@@ -39,9 +33,8 @@ type videoResponse struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
-// newVideoResponse maps a domain.Video to its API shape. The download URL is
-// only meaningful once processing is DONE, so it is left empty otherwise (and,
-// being `omitempty`, disappears from the JSON entirely).
+// newVideoResponse maps a domain.Video to its API shape; downloadURL is empty
+// until the video is DONE.
 func newVideoResponse(v domain.Video, downloadURL string) videoResponse {
 	return videoResponse{
 		ID:           v.ID.String(),

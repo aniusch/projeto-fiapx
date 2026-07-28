@@ -1,7 +1,6 @@
-// Package processing turns a video file into a zip of extracted frames. It is
-// deliberately free of any messaging, storage, or database concerns — it takes
-// file paths in and produces a zip on disk — so it can be unit-tested in
-// isolation and reused anywhere.
+// Package processing turns a video file into a zip of extracted frames. It takes
+// file paths in and produces a zip on disk, with no messaging, storage, or
+// database concerns, so it can be tested in isolation.
 package processing
 
 import (
@@ -50,8 +49,7 @@ func Run(ctx context.Context, ffmpegPath, srcPath, workDir string, fps int) (Res
 func extractFrames(ctx context.Context, ffmpegPath, srcPath, framesDir string, fps int) ([]string, error) {
 	pattern := filepath.Join(framesDir, "frame_%05d.png")
 
-	// CommandContext ties the process lifetime to ctx: if ctx is cancelled (job
-	// timeout or shutdown), Go sends SIGKILL to ffmpeg instead of leaking it.
+	// CommandContext kills ffmpeg if ctx is cancelled (job timeout or shutdown).
 	cmd := exec.CommandContext(ctx, ffmpegPath,
 		"-i", srcPath,
 		"-vf", fmt.Sprintf("fps=%d", fps),

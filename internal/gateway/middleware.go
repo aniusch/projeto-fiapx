@@ -8,9 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// ctxUserID is the key under which the authenticated user's id is stored in the
-// Gin request context. Using a private typed constant avoids collisions with
-// other middleware that might also write to the context.
+// ctxUserID keys the authenticated user's id in the Gin request context.
 const ctxUserID = "userID"
 
 // AuthRequired verifies the bearer token and stores the caller's user id in the
@@ -31,7 +29,7 @@ func (s *Server) AuthRequired() gin.HandlerFunc {
 		}
 
 		c.Set(ctxUserID, userID)
-		c.Next() // hand control to the next handler in the chain
+		c.Next()
 	}
 }
 
@@ -55,6 +53,6 @@ func userIDFrom(c *gin.Context) uuid.UUID {
 	if !ok {
 		return uuid.Nil
 	}
-	id, _ := v.(uuid.UUID) // type assertion: v is `any`, we assert it back to UUID
+	id, _ := v.(uuid.UUID)
 	return id
 }

@@ -1,11 +1,6 @@
 // Package gateway implements the public HTTP API: authentication, video uploads,
-// per-user status listing, and downloads.
-//
-// It declares the dependencies it needs as *interfaces* (UserStore, VideoStore,
-// ObjectStore, JobPublisher, TokenIssuer) rather than importing concrete types.
-// This is idiomatic Go — "accept interfaces, defined by the consumer" — and it
-// lets handlers be unit-tested with in-memory fakes instead of a real database,
-// object store, and broker.
+// per-user status listing, and downloads. Its dependencies are declared as
+// interfaces so handlers can be tested with in-memory fakes.
 package gateway
 
 import (

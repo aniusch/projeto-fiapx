@@ -15,9 +15,8 @@ var ErrInvalidToken = errors.New("invalid token")
 
 const issuer = "fiapx-gateway"
 
-// Manager issues and verifies JSON Web Tokens using HMAC-SHA256. A JWT is
-// stateless: the signature proves we issued it, so we can validate it without a
-// database lookup. The secret must be kept private — anyone with it can mint tokens.
+// Manager issues and verifies stateless JSON Web Tokens using HMAC-SHA256. The
+// secret must be kept private — anyone with it can mint valid tokens.
 type Manager struct {
 	secret []byte
 	ttl    time.Duration

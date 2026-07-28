@@ -6,10 +6,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// VideoStatus is the lifecycle state of a processing job. It mirrors the
-// video_status ENUM in Postgres. Defining it as a named string type (rather than
-// a bare string) lets us attach the valid values as constants and, if needed,
-// methods — while still serializing as a plain string.
+// VideoStatus is the lifecycle state of a processing job; it mirrors the
+// video_status ENUM in Postgres.
 type VideoStatus string
 
 const (

@@ -9,7 +9,7 @@ import (
 )
 
 func TestZipFiles(t *testing.T) {
-	dir := t.TempDir() // auto-removed when the test finishes
+	dir := t.TempDir()
 
 	// Create a few fake "frame" files with known contents.
 	want := map[string]string{

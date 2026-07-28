@@ -1,11 +1,11 @@
-// Package domain holds the core business types shared across services. These
-// structs know nothing about databases, HTTP, or JSON — keeping them pure means
-// the storage and transport layers depend on the domain, not the other way around.
+// Package domain holds the core business types shared across services,
+// independent of any database, transport, or serialization concern.
 package domain
 
 import (
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // User is an authenticated account that owns videos.

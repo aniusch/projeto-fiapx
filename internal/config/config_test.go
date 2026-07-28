@@ -29,7 +29,6 @@ func TestLoadDefaults(t *testing.T) {
 }
 
 func TestLoadOverridesFromEnv(t *testing.T) {
-	// t.Setenv registers cleanup that restores the previous value after the test.
 	t.Setenv("HTTP_PORT", "9999")
 	t.Setenv("PROCESSING_FPS", "5")
 	t.Setenv("JWT_TTL", "2h")
