@@ -28,32 +28,58 @@ Prometheus + Grafana · GitHub Actions.
 ## Project layout
 
 ```
-cmd/            service entrypoints (gateway, worker, notifier)
-internal/       private application code
-  config/       env-based configuration
-  platform/     cross-cutting helpers (logging, signals, metrics)
-migrations/     SQL schema (added in Phase 2)
-deploy/         docker-compose + k8s manifests (added later)
-legacy/         the original base project, for reference
-docs/           challenge PDF + architecture docs
+cmd/                  service entrypoints (gateway, worker, notifier)
+internal/             private application code
+  config/             env-based configuration
+  platform/           cross-cutting helpers (logging, signals, Postgres pool)
+  domain/             core business types (User, Video) — no infra dependencies
+  repository/postgres/ Postgres-backed repositories
+migrations/           versioned SQL schema (also the DB creation script)
+docs/
+  adr/                Architecture Decision Records
+  architecture/       C4, ERD, runtime & deployment diagrams (Mermaid)
+legacy/               the original base project, for reference
+docker-compose.yml    local infrastructure (Postgres, Redis, RabbitMQ, MinIO, Mailpit)
 ```
 
-## Running locally (Phase 1)
+## Documentation
 
-Each service reads config from environment variables (sensible dev defaults are
-built in, so it boots without a `.env`):
+- [Architecture](./docs/architecture/) — C4 context/container, data model, runtime flow, deployment topology.
+- [Decision records](./docs/adr/) — why each major choice was made.
+
+## Running locally
+
+Start the backing infrastructure (also runs the DB migrations):
 
 ```bash
-go run ./cmd/gateway    # HTTP on :8080, GET /healthz
+docker compose up -d
+```
+
+| Service   | URL |
+| --------- | --- |
+| Postgres  | `localhost:5432` (fiapx/fiapx) |
+| Redis     | `localhost:6379` |
+| RabbitMQ  | AMQP `localhost:5672` · UI [localhost:15672](http://localhost:15672) (guest/guest) |
+| MinIO     | API `localhost:9000` · console [localhost:9001](http://localhost:9001) (minioadmin/minioadmin) |
+| Mailpit   | SMTP `localhost:1025` · UI [localhost:8025](http://localhost:8025) |
+
+Run the services on the host (dev defaults match the compose stack, so no `.env`
+is needed — copy [`.env.example`](./.env.example) to `.env` to customize):
+
+```bash
+go run ./cmd/gateway    # :8080 — GET /healthz (liveness), GET /readyz (pings Postgres)
 go run ./cmd/worker     # boots and waits for jobs
 go run ./cmd/notifier   # boots and waits for events
 ```
 
-Build all binaries:
+## Tests
 
 ```bash
-go build ./...
+go build ./...                                       # compile everything
+go vet ./...                                          # static checks
+go test ./...                                         # unit tests
+go test -tags=integration ./...                       # integration tests (needs compose up)
 ```
 
-> Infrastructure (Postgres, Redis, RabbitMQ, MinIO) and the real endpoints are
-> added in subsequent phases.
+> The real endpoints, queue consumers, and object-storage wiring arrive in
+> subsequent phases.

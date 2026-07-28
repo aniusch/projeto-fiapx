@@ -1,0 +1,104 @@
+# Local development infrastructure for FIAP X.
+#
+# Brings up every backing service the application needs, plus a one-shot job that
+# applies the SQL migrations. The application services (gateway/worker/notifier)
+# run on the host via `go run ./cmd/...` during development and connect to these
+# containers on localhost. They get added to this file once their images exist.
+#
+#   docker compose up -d        # start infra + run migrations
+#   docker compose down         # stop (add -v to also wipe data volumes)
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: fiapx
+      POSTGRES_PASSWORD: fiapx
+      POSTGRES_DB: fiapx
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fiapx -d fiapx"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Applies migrations, then exits. Other services can wait on it completing.
+  migrate:
+    image: migrate/migrate:v4.17.1
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./migrations:/migrations:ro
+    command:
+      - "-path=/migrations"
+      - "-database=postgres://fiapx:fiapx@postgres:5432/fiapx?sslmode=disable"
+      - "up"
+    restart: on-failure
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    ports:
+      - "5672:5672"   # AMQP protocol
+      - "15672:15672" # management UI (guest/guest)
+    volumes:
+      - rabbitmqdata:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:RELEASE.2024-06-13T22-53-53Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000" # S3 API
+      - "9001:9001" # web console
+    volumes:
+      - miniodata:/data
+
+  # Waits for MinIO, then creates the bucket. Idempotent, so re-runs are safe.
+  minio-init:
+    image: minio/mc:RELEASE.2024-06-12T14-34-03Z
+    depends_on:
+      - minio
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        until mc alias set local http://minio:9000 minioadmin minioadmin; do
+          echo 'waiting for minio...'; sleep 1;
+        done
+        mc mb --ignore-existing local/fiapx-videos
+        echo 'minio bucket ready'
+
+  # Mailpit is a dev SMTP server: catches all outbound mail and shows it in a UI.
+  mailpit:
+    image: axllent/mailpit:v1.20
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # web UI
+    environment:
+      MP_MAX_MESSAGES: "500"
+
+volumes:
+  pgdata:
+  miniodata:
+  rabbitmqdata:

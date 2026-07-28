@@ -1,7 +1,8 @@
 // Command gateway is the public-facing API service. It handles authentication,
 // accepts video uploads, enqueues processing jobs, and reports per-user status.
 //
-// In Phase 1 it only exposes a health check; the real routes arrive in Phase 3.
+// As of Phase 2 it connects to Postgres and exposes liveness (/healthz) and
+// readiness (/readyz) checks; the real routes arrive in Phase 3.
 package main
 
 import (
@@ -10,6 +11,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -20,23 +22,48 @@ import (
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
-		// The default logger is fine here: our custom one needs the config we
-		// just failed to load.
 		slog.Error("failed to load config", "error", err)
 		os.Exit(1)
 	}
 
 	logger := platform.NewLogger(cfg.Env, cfg.LogLevel)
-	slog.SetDefault(logger) // so libraries using slog's default logger match our format
+	slog.SetDefault(logger)
+
+	// Bound the startup work (DB connect) so we fail fast instead of hanging if
+	// Postgres is unreachable.
+	startupCtx, cancelStartup := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancelStartup()
+
+	pool, err := platform.NewPostgresPool(startupCtx, cfg.Postgres.DSN)
+	if err != nil {
+		logger.Error("failed to connect to postgres", "error", err)
+		os.Exit(1)
+	}
+	defer pool.Close()
+	logger.Info("connected to postgres")
 
 	if cfg.Env == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
 	router := gin.New()
-	router.Use(gin.Recovery()) // turns panics into 500s instead of crashing the process
+	router.Use(gin.Recovery())
+
+	// Liveness: the process is up. Kubernetes restarts the pod if this fails.
 	router.GET("/healthz", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	// Readiness: dependencies are reachable. Kubernetes stops routing traffic
+	// here (without restarting) when this fails, e.g. during a DB blip.
+	router.GET("/readyz", func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
+		defer cancel()
+		if err := pool.Ping(ctx); err != nil {
+			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "unavailable", "postgres": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"status": "ready"})
 	})
 
 	srv := &http.Server{
@@ -44,18 +71,14 @@ func main() {
 		Handler: router,
 	}
 
-	// Start the server in a goroutine so main can block on shutdown signals.
 	go func() {
 		logger.Info("gateway listening", "port", cfg.HTTP.Port, "env", cfg.Env)
-		// ListenAndServe blocks until the server stops. A clean shutdown returns
-		// http.ErrServerClosed, which is expected — anything else is a real error.
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Error("http server failed", "error", err)
 			os.Exit(1)
 		}
 	}()
 
-	// Block until we get SIGINT/SIGTERM, then drain in-flight requests.
 	ctx, stop := platform.ShutdownContext()
 	defer stop()
 	<-ctx.Done()
