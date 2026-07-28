@@ -74,11 +74,16 @@ type JWTConfig struct {
 	TTL    time.Duration
 }
 
-// SMTPConfig configures the outbound mail server used by the notifier.
+// SMTPConfig configures the outbound mail server used by the notifier. In dev
+// this points at Mailpit (no auth, no TLS); in prod, at a real relay with
+// credentials and STARTTLS.
 type SMTPConfig struct {
-	Host string
-	Port int
-	From string
+	Host     string
+	Port     int
+	Username string
+	Password string
+	From     string
+	StartTLS bool
 }
 
 // Load reads configuration from the environment, applying development-friendly
@@ -120,9 +125,12 @@ func Load() (Config, error) {
 			TTL:    l.duration("JWT_TTL", 24*time.Hour),
 		},
 		SMTP: SMTPConfig{
-			Host: l.str("SMTP_HOST", "localhost"),
-			Port: l.int("SMTP_PORT", 1025),
-			From: l.str("SMTP_FROM", "no-reply@fiapx.local"),
+			Host:     l.str("SMTP_HOST", "localhost"),
+			Port:     l.int("SMTP_PORT", 1025),
+			Username: l.str("SMTP_USERNAME", ""),
+			Password: l.str("SMTP_PASSWORD", ""),
+			From:     l.str("SMTP_FROM", "no-reply@fiapx.local"),
+			StartTLS: l.boolean("SMTP_STARTTLS", false),
 		},
 		Worker: WorkerConfig{
 			FFmpegPath:  l.str("FFMPEG_PATH", "ffmpeg"),
