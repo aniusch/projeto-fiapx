@@ -11,6 +11,8 @@ directly on GitHub. They evolve alongside the code, phase by phase.
 | [Data model (ERD)](./data-model.md) | The Postgres schema: entities, columns, relationships. |
 | [Runtime flow](./runtime-upload-flow.md) | Sequence of an upload from request to processed result and notification. |
 | [Deployment topology](./deployment-topology.md) | How it runs under Docker Compose (dev) and Kubernetes (prod). |
+| [AWS/EKS cloud topology](./aws-topology.md) | Detailed AWS topology: VPC, EKS namespaces, RDS/S3/Secrets Manager, GHCR, node-role auth. |
+| [Workflow (runtime + CI/CD)](./aws-workflow.md) | The runtime request/processing flow and the CI/CD + secrets-sync flow. |
 
 See also the [Architecture Decision Records](../adr/) for the *why* behind these.
 
