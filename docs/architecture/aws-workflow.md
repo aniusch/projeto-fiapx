@@ -5,8 +5,10 @@ request/processing path, and the CI/CD + secrets-sync path.
 
 ## Runtime flow
 
-Numbered from the upload; the failure branch (12) is dashed. Uploads return 202
-immediately; processing happens asynchronously on the worker.
+Numbered from the upload; the failure branch (13–14) is dashed. Uploads return
+202 immediately; processing happens asynchronously on the worker. The worker owns
+no database — it publishes status events (10) and the gateway, the sole writer,
+applies them to RDS (11–12).
 
 ```mermaid
 flowchart LR
@@ -24,16 +26,16 @@ flowchart LR
   gw -->|"3 INSERT PENDING"| rds
   gw -->|"4 publish job"| mq
   gw -->|"5 202 Accepted"| user
-  mq -->|"6 deliver"| wk
-  wk -->|"7 PROCESSING"| rds
-  wk -->|"8 get source"| s3
-  wk -->|"9 ffmpeg + zip"| wk
-  wk -->|"10 put zip"| s3
-  wk -->|"11 DONE"| rds
-  wk -.->|"12 failure event"| mq
-  mq -.->|"12 deliver"| nt
-  nt -.->|"12 email"| mp
-  user -->|"13 GET status / download (presigned S3)"| gw
+  mq -->|"6 deliver job"| wk
+  wk -->|"7 get source"| s3
+  wk -->|"8 ffmpeg + zip"| wk
+  wk -->|"9 put zip"| s3
+  wk -->|"10 status events (proc/done/fail)"| mq
+  mq -->|"11 deliver status"| gw
+  gw -->|"12 apply PROCESSING/DONE/FAILED"| rds
+  mq -.->|"13 deliver (on failure)"| nt
+  nt -.->|"14 email"| mp
+  user -->|"15 GET status / download (presigned S3)"| gw
 ```
 
 ## CI/CD & secrets flow

@@ -48,8 +48,8 @@ flowchart TB
   gw -->|"publish jobs, AMQP"| mq
   mq -->|"deliver jobs"| wk
   wk -->|"get source / put zip (node role)"| s3
-  wk -->|"update status"| rds
-  wk -->|"failure events"| mq
+  wk -->|"status & failure events"| mq
+  mq -->|"deliver status events"| gw
   mq -->|"deliver events"| nt
   nt -->|SMTP| mp
   eso -->|"read fiapx/app (node role via IMDS)"| sm

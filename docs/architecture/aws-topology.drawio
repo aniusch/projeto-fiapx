@@ -121,17 +121,15 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e_wk_rds" edge="1" parent="1" source="wk" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" target="rds" value="update status">
-          <mxGeometry relative="1" x="-0.2371" as="geometry">
-            <mxPoint as="offset" />
+        <mxCell id="e_mq_gw" edge="1" parent="1" source="mq" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" target="gw" value="deliver status events">
+          <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="593.52" y="270" />
-              <mxPoint x="840.52" y="270" />
-              <mxPoint x="840.52" y="250" />
+              <mxPoint x="550" y="320" />
+              <mxPoint x="440" y="320" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e_wk_mq" edge="1" parent="1" source="wk" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" target="mq" value="failure events">
+        <mxCell id="e_wk_mq" edge="1" parent="1" source="wk" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" target="mq" value="status &amp; failure events">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="590" y="350" />
