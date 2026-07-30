@@ -34,6 +34,11 @@ variable "vpc_cidr" {
 variable "az_count" {
   type    = number
   default = 2
+
+  validation {
+    condition     = var.az_count >= 2
+    error_message = "az_count must be at least 2 (required by EKS and RDS)."
+  }
 }
 
 # --- Nodes ---
@@ -55,6 +60,11 @@ variable "node_min_size" {
 variable "node_max_size" {
   type    = number
   default = 4
+
+  validation {
+    condition     = var.node_max_size >= var.node_min_size
+    error_message = "node_max_size must be >= node_min_size."
+  }
 }
 
 variable "node_disk_size" {
@@ -92,6 +102,11 @@ variable "db_password" {
   description = "RDS master password. Provide via TF_VAR_db_password; never commit it."
   type        = string
   sensitive   = true
+
+  validation {
+    condition     = length(var.db_password) >= 8
+    error_message = "db_password must be at least 8 characters (RDS minimum)."
+  }
 }
 
 variable "tags" {

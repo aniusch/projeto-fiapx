@@ -49,4 +49,9 @@ variable "node_imds_hop_limit" {
   description = "IMDSv2 hop limit for nodes. 2 lets pods reach the metadata service and assume the node role (needed for S3 and ESO without IRSA)."
   type        = number
   default     = 2
+
+  validation {
+    condition     = var.node_imds_hop_limit >= 1 && var.node_imds_hop_limit <= 2
+    error_message = "node_imds_hop_limit must be 1 (host only) or 2 (allow pods)."
+  }
 }

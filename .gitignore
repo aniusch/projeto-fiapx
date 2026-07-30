@@ -27,6 +27,8 @@ crash.log
 crash.*.log
 *.tfvars
 !*.tfvars.example
+# lab.tfvars holds only non-secret values (password comes from TF_VAR_db_password)
+!infra/terraform/envs/lab/lab.tfvars
 backend.hcl
 !backend.hcl.example
 override.tf
