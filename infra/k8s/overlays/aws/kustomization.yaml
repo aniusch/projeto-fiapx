@@ -41,6 +41,36 @@ patches:
       - op: remove
         path: /spec/template/spec/initContainers
 
+  # Keel watches these Deployments and rolls out a new image whenever the
+  # :latest tag's digest changes in GHCR — pull-based CD that needs no AWS creds.
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: gateway
+        annotations:
+          keel.sh/policy: force
+          keel.sh/trigger: poll
+          keel.sh/pollSchedule: "@every 2m"
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: worker
+        annotations:
+          keel.sh/policy: force
+          keel.sh/trigger: poll
+          keel.sh/pollSchedule: "@every 2m"
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: notifier
+        annotations:
+          keel.sh/policy: force
+          keel.sh/trigger: poll
+          keel.sh/pollSchedule: "@every 2m"
+
 # Pull the CI-built images straight from public GHCR (no ECR, no pull secret).
 images:
   - name: fiapx/gateway

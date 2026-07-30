@@ -25,10 +25,13 @@ it already has `secretsmanager:GetSecretValue` and S3 access.
 Prereqs: `terraform apply` in `envs/lab` done, `kubectl` pointed at the cluster.
 
 ```bash
-# 1) Install the External Secrets Operator (once).
+# 1) Install the External Secrets Operator and Keel (once).
 helm repo add external-secrets https://charts.external-secrets.io
-helm install external-secrets external-secrets/external-secrets \
+helm upgrade --install external-secrets external-secrets/external-secrets \
   -n external-secrets --create-namespace
+
+helm repo add keel https://charts.keel.sh
+helm upgrade --install keel keel/keel -n keel --create-namespace
 
 # 2) Set the bucket name in configmap.yaml from Terraform output.
 #    (cd ../../../terraform/envs/lab && terraform output -raw s3_bucket)
@@ -40,6 +43,19 @@ kubectl kustomize --load-restrictor LoadRestrictionsNone . | kubectl apply -f -
 # 4) Watch ESO materialize the secret, then the app come up.
 kubectl -n fiapx get externalsecret,secret
 kubectl -n fiapx get pods -w
+```
+
+## Continuous rollout (Keel)
+
+The gateway/worker/notifier Deployments are annotated for [Keel](https://keel.sh)
+(`keel.sh/policy: force`, `trigger: poll`, `pollSchedule: @every 2m`). Keel polls
+GHCR and, when the `:latest` digest changes (i.e. CI pushed a new build), updates
+the Deployment — a rolling restart onto the new image. This is pull-based CD that
+needs no AWS credentials and is decoupled from the (manual) infra deploy: once the
+cluster is up, a normal `git push` to `main` flows through CI → GHCR → Keel → pods.
+
+```bash
+kubectl -n keel logs deploy/keel   # watch it detect and apply updates
 ```
 
 ## Access & verify
