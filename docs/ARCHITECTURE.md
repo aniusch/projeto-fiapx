@@ -128,8 +128,10 @@ sequence. Uploads return **202 Accepted** immediately after enqueuing.
 - **Ownership checks**: a user can only see/download their own videos; others
   get 404 (existence is not revealed). Login returns a uniform 401 to avoid
   email enumeration.
-- Secrets are injected via environment (Kubernetes `Secret` / compose env), kept
-  out of the image and the repo.
+- Secrets are injected via environment, never baked into the image or the repo.
+  Locally they come from compose env / a Kubernetes `Secret`; on AWS the **External
+  Secrets Operator** syncs them from **AWS Secrets Manager**
+  ([ADR-0009](./adr/0009-secrets-external-secrets-operator.md)).
 
 ## 8. Observability
 
@@ -147,8 +149,13 @@ JSON logs (via `slog`) are emitted in production. See
 - **Kubernetes** ([`infra/k8s`](../infra/k8s)) provides Deployments, Services,
   an Ingress, probes wired to `/healthz` + `/readyz`, ConfigMap/Secret, a
   migration Job, and the worker HPA. Verified on minikube.
+- **AWS / EKS** ([`infra/terraform`](../infra/terraform) +
+  [`infra/k8s/overlays/aws`](../infra/k8s/overlays/aws)): EKS with managed RDS and
+  S3, images from GHCR, and secrets via the External Secrets Operator; Redis,
+  RabbitMQ, and Mailpit stay in-cluster.
 
-See [ADR-0007](./adr/0007-deployment-compose-and-kubernetes.md).
+See [ADR-0007](./adr/0007-deployment-compose-and-kubernetes.md) and the
+[deployment topology](./architecture/deployment-topology.md).
 
 ## 10. Testing & CI/CD
 
@@ -159,6 +166,8 @@ See [ADR-0007](./adr/0007-deployment-compose-and-kubernetes.md).
 - **CI/CD** ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)): lint,
   build, unit + integration tests against service containers, then build and push
   the three images to GHCR on `main`.
+- **Code quality** ([`.github/workflows/sonar.yml`](../.github/workflows/sonar.yml)):
+  a SonarCloud scan with Go coverage runs on every push and pull request.
 
 ## 11. Technology choices
 

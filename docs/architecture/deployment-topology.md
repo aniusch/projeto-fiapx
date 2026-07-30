@@ -39,47 +39,53 @@ flowchart TB
     graf --> prom
 ```
 
-## Production — Kubernetes
+## Production — AWS / EKS
 
-Each service is a Deployment. The worker carries a HorizontalPodAutoscaler so the
-CPU-heavy tier scales on load independently of the API tier. Managed AWS services
-(RDS, ElastiCache, S3, SES) can replace the in-cluster backing services.
+Deployed from the [`infra/k8s/overlays/aws`](../../infra/k8s/overlays/aws) overlay
+onto EKS (provisioned by [`infra/terraform`](../../infra/terraform)). Postgres is
+managed **RDS** and video storage is **S3**; Redis, RabbitMQ, and Mailpit run
+in-cluster. Images are pulled from **public GHCR**. Application secrets are synced
+from **AWS Secrets Manager** by the **External Secrets Operator (ESO)** into a
+Kubernetes Secret. The worker's HorizontalPodAutoscaler scales the CPU-heavy tier
+(2→6 on CPU).
+
+Because AWS Academy Learner Lab forbids IRSA, both the app and ESO authenticate to
+AWS with the **EKS node role (`LabRole`) via IMDS** — no static credentials in the
+cluster ([ADR-0009](../adr/0009-secrets-external-secrets-operator.md)).
 
 ```mermaid
 flowchart TB
-    ing["Ingress / Load Balancer"] --> gsvc["Service: gateway"]
-    gsvc --> gw1["gateway pod"]
-    gsvc --> gw2["gateway pod"]
+    ghcr["ghcr.io (public images)"]
 
-    subgraph wdep["worker Deployment + HPA"]
-        wk1["worker pod"]
-        wk2["worker pod"]
-        wk3["worker pod (autoscaled)"]
+    subgraph eks["EKS — nodes assume LabRole via IMDS"]
+        gw["gateway pods"]
+        subgraph wdep["worker Deployment + HPA (2→6)"]
+            wk["worker pods"]
+        end
+        nt["notifier pod"]
+        rd[("Redis")]
+        mq{{"RabbitMQ"}}
+        mp["Mailpit"]
+        eso["External Secrets Operator"]
+        sec["Secret: fiapx-secrets"]
     end
-    ndep["notifier Deployment"]
 
-    gw1 --> mq{{"RabbitMQ"}}
-    gw2 --> mq
-    gw1 --> pg[("PostgreSQL / RDS")]
-    gw2 --> pg
-    gw1 --> rd[("Redis / ElastiCache")]
-    gw2 --> rd
-    gw1 --> s3[("S3")]
-    gw2 --> s3
+    rds[("RDS PostgreSQL")]
+    s3[("S3")]
+    sm[("AWS Secrets Manager")]
 
-    mq --> wk1
-    mq --> wk2
-    mq --> wk3
-    wk1 --> pg
-    wk2 --> pg
-    wk3 --> pg
-    wk1 --> s3
-    wk2 --> s3
-    wk3 --> s3
-    wk1 -. failure events .-> mq
-    wk2 -. failure events .-> mq
-    wk3 -. failure events .-> mq
-
-    mq --> ndep
-    ndep --> smtp["SMTP / SES"]
+    ghcr -. images .-> gw & wk & nt
+    gw --> rd
+    gw --> mq
+    gw --> rds
+    gw --> s3
+    mq --> wk
+    wk --> rds
+    wk --> s3
+    wk -. failure events .-> mq
+    mq --> nt
+    nt --> mp
+    eso -. reads .-> sm
+    eso -. creates .-> sec
+    sec -. envFrom .-> gw & wk & nt
 ```

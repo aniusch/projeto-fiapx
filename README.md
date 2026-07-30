@@ -119,8 +119,12 @@ kubectl kustomize --load-restrictor LoadRestrictionsNone infra/k8s | kubectl app
    images and pushes them to the GitHub Container Registry
    (`ghcr.io/aniusch/projeto-fiapx-{gateway,worker,notifier}`), with build caching.
 
+A separate [SonarCloud workflow](./.github/workflows/sonar.yml) runs a code-quality
+scan with Go coverage on every push and pull request.
+
 To deploy those published images to Kubernetes, point the manifests at GHCR by
-editing the `images:` block in [`infra/k8s/kustomization.yaml`](./infra/k8s/kustomization.yaml).
+editing the `images:` block in the [AWS overlay](./infra/k8s/overlays/aws/) (or
+`infra/k8s/kustomization.yaml` for the base).
 
 ## Monitoring
 

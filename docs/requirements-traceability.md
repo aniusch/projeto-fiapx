@@ -21,7 +21,7 @@ how it was verified.
 | Scalable architecture | Stateless services, shared queue/stores, worker HPA | k8s deploy on minikube; HPA reads CPU |
 | Versioned on GitHub | Git repository, one commit per phase | `git log` |
 | Tests that ensure quality | Unit tests (in-memory fakes) + integration tests (tag `integration`) | `go test ./...` and `-tags=integration ./...` green |
-| CI/CD | [GitHub Actions](../.github/workflows/ci.yml): lint, test, build & push images | Validated with actionlint |
+| CI/CD | [GitHub Actions](../.github/workflows/ci.yml): lint, test, build & push images; plus a [SonarCloud](../.github/workflows/sonar.yml) code-quality scan with coverage | Validated with actionlint |
 
 ## Recommended stack
 
