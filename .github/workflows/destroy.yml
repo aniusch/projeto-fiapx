@@ -45,11 +45,13 @@ jobs:
         run: echo "ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)" >> "$GITHUB_ENV"
 
       - name: Terraform init (S3 backend)
+        env:
+          REGION: ${{ inputs.region }}
         run: |
           terraform -chdir=infra/terraform/envs/lab init -input=false \
             -backend-config="bucket=fiapx-tfstate-${ACCOUNT_ID}" \
             -backend-config="key=envs/lab/terraform.tfstate" \
-            -backend-config="region=${{ inputs.region }}" \
+            -backend-config="region=${REGION}" \
             -backend-config="dynamodb_table=fiapx-tflock" \
             -backend-config="encrypt=true"
 

@@ -44,7 +44,10 @@ jobs:
       - uses: azure/setup-helm@v4
 
       - name: Update kubeconfig
-        run: aws eks update-kubeconfig --name "${{ inputs.cluster_name }}" --region "${{ inputs.region }}"
+        env:
+          CLUSTER_NAME: ${{ inputs.cluster_name }}
+          REGION: ${{ inputs.region }}
+        run: aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "$REGION"
 
       - name: Ensure External Secrets Operator and Keel
         run: |
@@ -56,9 +59,11 @@ jobs:
           helm upgrade --install keel keel/keel -n keel --create-namespace --wait
 
       - name: Apply the AWS overlay
+        env:
+          S3_BUCKET: ${{ inputs.s3_bucket }}
         run: |
           kubectl kustomize --load-restrictor LoadRestrictionsNone infra/k8s/overlays/aws \
-            | sed "s/REPLACE_WITH_TF_S3_BUCKET/${{ inputs.s3_bucket }}/g" \
+            | sed "s/REPLACE_WITH_TF_S3_BUCKET/$S3_BUCKET/g" \
             | kubectl apply -f -
 
       - name: Wait for rollout
