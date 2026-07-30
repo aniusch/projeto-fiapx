@@ -1,0 +1,61 @@
+name: Destroy (lab)
+
+# Manual teardown of the AWS Academy lab environment (EKS, RDS, S3, Secrets
+# Manager, VPC — everything in envs/lab). The remote-state backend is left in
+# place. Uses the same lab credentials as the deploy workflow (the "lab" GitHub
+# Environment); refresh them if the session expired.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type 'destroy' to confirm tearing down the lab environment"
+        required: true
+      region:
+        description: "AWS region"
+        required: false
+        default: "us-east-1"
+
+jobs:
+  destroy:
+    name: terraform destroy envs/lab
+    runs-on: ubuntu-latest
+    environment: lab
+    steps:
+      - name: Require explicit confirmation
+        if: ${{ inputs.confirm != 'destroy' }}
+        run: |
+          echo "The 'confirm' input must be exactly 'destroy' — aborting."
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (lab session)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ inputs.region }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Resolve account id
+        run: echo "ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)" >> "$GITHUB_ENV"
+
+      - name: Terraform init (S3 backend)
+        run: |
+          terraform -chdir=infra/terraform/envs/lab init -input=false \
+            -backend-config="bucket=fiapx-tfstate-${ACCOUNT_ID}" \
+            -backend-config="key=envs/lab/terraform.tfstate" \
+            -backend-config="region=${{ inputs.region }}" \
+            -backend-config="dynamodb_table=fiapx-tflock" \
+            -backend-config="encrypt=true"
+
+      - name: Terraform destroy
+        env:
+          # Required variable (even to destroy); the value is irrelevant while
+          # tearing resources down.
+          TF_VAR_db_password: destroy-placeholder
+        run: terraform -chdir=infra/terraform/envs/lab destroy -auto-approve -input=false -var-file=lab.tfvars
