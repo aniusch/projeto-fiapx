@@ -96,6 +96,16 @@ AWS_PROFILE=fiap TF_VAR_db_password=whatever ./scripts/teardown.sh          # en
 AWS_PROFILE=fiap TF_VAR_db_password=whatever ./scripts/teardown.sh --all    # + state backend
 ```
 
+`--all` also removes the remote-state backend by calling
+`scripts/teardown-bootstrap.sh`, which purges the **versioned** state bucket
+(every object version + delete-marker) before destroying it — a plain
+`terraform destroy` can't delete a non-empty versioned bucket. Run that script on
+its own to remove only the backend:
+
+```bash
+AWS_PROFILE=fiap ./scripts/teardown-bootstrap.sh
+```
+
 Or by hand:
 
 ```bash

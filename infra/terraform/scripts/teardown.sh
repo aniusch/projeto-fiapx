@@ -26,8 +26,8 @@ echo "==> terraform destroy: envs/lab"
 terraform -chdir="$LAB" destroy -var-file=lab.tfvars
 
 if [ "${1:-}" = "--all" ]; then
-  echo "==> terraform destroy: bootstrap (remote state)"
-  terraform -chdir="$HERE/bootstrap" destroy
+  echo "==> Also removing the remote-state backend"
+  "$(dirname "$0")/teardown-bootstrap.sh"
 fi
 
 echo "Teardown complete."
