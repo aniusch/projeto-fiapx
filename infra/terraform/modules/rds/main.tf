@@ -17,12 +17,8 @@ resource "aws_security_group" "this" {
     security_groups = var.allowed_security_group_ids
   }
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  # No egress rules: a managed RDS instance doesn't initiate outbound traffic, so
+  # the security group denies all egress (avoids the open 0.0.0.0/0 egress).
 
   tags = { Name = "${var.project}-rds" }
 }

@@ -25,4 +25,5 @@ COPY --from=build /out/worker /usr/local/bin/worker
 
 # Scratch space for downloads/frames/zips.
 ENV WORK_DIR=/tmp
+USER 65532:65532
 ENTRYPOINT ["worker"]

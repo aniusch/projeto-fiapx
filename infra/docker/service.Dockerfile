@@ -23,4 +23,5 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 FROM alpine:3.20
 RUN apk add --no-cache ca-certificates
 COPY --from=build /out/app /usr/local/bin/app
+USER 65532:65532
 ENTRYPOINT ["app"]
