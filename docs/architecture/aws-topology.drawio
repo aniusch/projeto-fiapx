@@ -1,195 +1,209 @@
-<mxfile host="app.diagrams.net">
-  <diagram id="fiapx-aws-topology" name="AWS Topology">
-    <mxGraphModel dx="1939" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="880" math="0" shadow="0">
-      <root>
-        <mxCell id="0" />
-        <mxCell id="1" parent="0" />
-        <mxCell id="title" parent="1" style="text;html=1;fontSize=20;fontStyle=1;fontColor=light-dark(#1F2937,#FFFFFF);align=left;verticalAlign=middle;" value="FIAP X — AWS / EKS Cloud Topology" vertex="1">
-          <mxGeometry height="34" width="620" x="40" y="24" as="geometry" />
-        </mxCell>
-        <mxCell id="awsBox" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDF6EC;strokeColor=#FF9900;strokeWidth=2;verticalAlign=top;fontStyle=1;fontSize=14;fontColor=light-dark(#1F2937,#FFFFFF);arcSize=4;" value="AWS Cloud  ·  us-east-1" vertex="1">
-          <mxGeometry height="600" width="960" x="240" y="110" as="geometry" />
-        </mxCell>
-        <mxCell id="vpcBox" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;dashed=1;verticalAlign=top;fontStyle=1;fontSize=12;fontColor=light-dark(#1F2937,#FFFFFF);arcSize=4;" value="VPC 10.0.0.0/16  ·  public subnets · 2 AZs · no NAT" vertex="1">
-          <mxGeometry height="520" width="640" x="270" y="160" as="geometry" />
-        </mxCell>
-        <mxCell id="eksBox" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEF3FF;strokeColor=#326CE5;verticalAlign=top;fontStyle=1;fontSize=12;fontColor=light-dark(#1F2937,#FFFFFF);arcSize=4;" value="Amazon EKS — fiapx  ·  k8s 1.30 · nodes 2x t3.medium · IMDSv2 hop-limit 2" vertex="1">
-          <mxGeometry height="450" width="590" x="295" y="205" as="geometry" />
-        </mxCell>
-        <mxCell id="nsApp" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6F8F6;strokeColor=#9AA0A6;dashed=1;verticalAlign=top;fontStyle=2;fontSize=11;fontColor=light-dark(#1F2937,#FFFFFF);arcSize=6;" value="namespace: fiapx" vertex="1">
-          <mxGeometry height="210" width="550" x="315" y="255" as="geometry" />
-        </mxCell>
-        <mxCell id="nsEso" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8EF;strokeColor=#E0A44A;dashed=1;verticalAlign=top;fontStyle=2;fontSize=11;fontColor=light-dark(#1F2937,#FFFFFF);arcSize=6;" value="namespace: external-secrets" vertex="1">
-          <mxGeometry height="150" width="345" x="315" y="485" as="geometry" />
-        </mxCell>
-        <mxCell id="nsKeel" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8EF;strokeColor=#E0A44A;dashed=1;verticalAlign=top;fontStyle=2;fontSize=11;fontColor=light-dark(#1F2937,#FFFFFF);arcSize=6;" value="namespace: keel" vertex="1">
-          <mxGeometry height="150" width="185" x="680" y="485" as="geometry" />
-        </mxCell>
-        <mxCell id="gw" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#326CE5;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" value="gateway&#xa;x2 · Svc + Ingress" vertex="1">
-          <mxGeometry height="50" width="155" x="335" y="280" as="geometry" />
-        </mxCell>
-        <mxCell id="wk" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#326CE5;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" value="worker&#xa;x2 + HPA 2-6 · ffmpeg" vertex="1">
-          <mxGeometry height="50" width="175" x="506" y="280" as="geometry" />
-        </mxCell>
-        <mxCell id="nt" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#326CE5;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" value="notifier" vertex="1">
-          <mxGeometry height="50" width="150" x="697.5" y="280" as="geometry" />
-        </mxCell>
-        <mxCell id="rd" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9673A6;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" value="redis" vertex="1">
-          <mxGeometry height="50" width="155" x="335" y="393" as="geometry" />
-        </mxCell>
-        <mxCell id="mq" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9673A6;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" value="rabbitmq" vertex="1">
-          <mxGeometry height="50" width="175" x="502.5" y="395" as="geometry" />
-        </mxCell>
-        <mxCell id="mp" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9673A6;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" value="mailpit" vertex="1">
-          <mxGeometry height="50" width="150" x="700" y="393" as="geometry" />
-        </mxCell>
-        <mxCell id="eso" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E0A44A;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" value="External Secrets&#xa;Operator" vertex="1">
-          <mxGeometry height="55" width="150" x="330" y="530" as="geometry" />
-        </mxCell>
-        <mxCell id="sec" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E0A44A;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" value="Secret:&#xa;fiapx-secrets" vertex="1">
-          <mxGeometry height="55" width="150" x="495" y="530" as="geometry" />
-        </mxCell>
-        <mxCell id="keel" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E0A44A;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" value="Keel" vertex="1">
-          <mxGeometry height="55" width="150" x="700" y="530" as="geometry" />
-        </mxCell>
-        <mxCell id="rds" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E9F0FF;strokeColor=#2E5AAC;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" value="Amazon RDS&#xa;PostgreSQL 16.9 (private)" vertex="1">
-          <mxGeometry height="70" width="180" x="1000" y="215" as="geometry" />
-        </mxCell>
-        <mxCell id="s3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F6EE;strokeColor=#2E8B57;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" value="Amazon S3&#xa;fiapx-videos (encrypted)" vertex="1">
-          <mxGeometry height="70" width="180" x="1000" y="335" as="geometry" />
-        </mxCell>
-        <mxCell id="sm" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDECEC;strokeColor=#C0392B;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" value="AWS Secrets Manager&#xa;fiapx/app" vertex="1">
-          <mxGeometry height="70" width="180" x="1000" y="455" as="geometry" />
-        </mxCell>
-        <mxCell id="client" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#555555;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" value="Client / browser" vertex="1">
-          <mxGeometry height="60" width="140" x="60" y="370" as="geometry" />
-        </mxCell>
-        <mxCell id="gha" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0F0F0;strokeColor=#24292E;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" value="GitHub Actions (CI)&#xa;test · build · Sonar" vertex="1">
-          <mxGeometry height="55" width="190" x="700" y="30" as="geometry" />
-        </mxCell>
-        <mxCell id="ghcr" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0F0F0;strokeColor=#24292E;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" value="GHCR (ghcr.io)&#xa;public images" vertex="1">
-          <mxGeometry height="55" width="190" x="960" y="30" as="geometry" />
-        </mxCell>
-        <mxCell id="legend" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=light-dark(#1F2937,#FFFFFF);spacingLeft=6;" value="Solid = runtime dependency  ·  Dashed = image pull / secret injection.&#xa;Pods and the External Secrets Operator authenticate to AWS via the EKS node role (LabRole) over IMDS — no IRSA in AWS Academy Learner Lab." vertex="1">
-          <mxGeometry height="50" width="960" x="240" y="720" as="geometry" />
-        </mxCell>
-        <mxCell id="e_client_gw" edge="1" parent="1" source="client" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" target="gw" value="&lt;span style=&quot;&quot;&gt;HTTPS&lt;/span&gt;">
-          <mxGeometry relative="1" x="-0.0744" as="geometry">
-            <mxPoint as="offset" />
-            <Array as="points">
-              <mxPoint x="130" y="350" />
-              <mxPoint x="390" y="350" />
-            </Array>
-            <mxPoint x="140" y="340.0344827586207" as="sourcePoint" />
-            <mxPoint x="352.48275862068976" y="290" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e_gw_rds" edge="1" parent="1" source="gw" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;exitX=0.524;exitY=-0.003;exitDx=0;exitDy=0;exitPerimeter=0;" target="rds" value="SQL 5432">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="416.2" y="250" />
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e_gw_s3" edge="1" parent="1" source="gw" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" target="s3" value="S3 API · node role">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e_gw_rd" edge="1" parent="1" source="gw" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" target="rd" value="cache / rate-limit">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e_gw_mq" edge="1" parent="1" source="gw" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" target="mq" value="publish jobs (AMQP)">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="440" y="350" />
-              <mxPoint x="550" y="350" />
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e_mq_wk" edge="1" parent="1" source="mq" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" target="wk" value="deliver">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="590" y="350" />
-              <mxPoint x="590" y="350" />
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e_wk_s3" edge="1" parent="1" source="wk" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" target="s3" value="get source / put zip">
-          <mxGeometry relative="1" x="0.5311" as="geometry">
-            <mxPoint as="offset" />
-            <Array as="points">
-              <mxPoint x="593.51" y="350" />
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e_mq_gw" edge="1" parent="1" source="mq" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" target="gw" value="deliver status events">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="550" y="320" />
-              <mxPoint x="440" y="320" />
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e_wk_mq" edge="1" parent="1" source="wk" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" target="mq" value="status &amp; failure events">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="590" y="350" />
-              <mxPoint x="590" y="350" />
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e_mq_nt" edge="1" parent="1" source="mq" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" target="nt" value="deliver">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="630" y="380" />
-              <mxPoint x="772.52" y="380" />
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e_nt_mp" edge="1" parent="1" source="nt" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" target="mp" value="SMTP">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="790" y="360" />
-              <mxPoint x="790" y="360" />
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e_eso_sm" edge="1" parent="1" source="eso" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="sm" value="read fiapx/app · node role / IMDS">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="405.03" y="610.03" />
-              <mxPoint x="1080" y="610.03" />
-              <mxPoint x="1080" y="525" />
-            </Array>
-            <mxPoint x="467.5" y="612.4827586206898" as="sourcePoint" />
-            <mxPoint x="1077.5" y="580" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e_eso_sec" edge="1" parent="1" source="eso" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" target="sec" value="sync">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e_sec_app" edge="1" parent="1" source="sec" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#9AA0A6;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=open;" target="nsApp" value="envFrom">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e_ghcr_app" edge="1" parent="1" source="ghcr" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#9AA0A6;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=open;" target="nsApp" value="image pull">
-          <mxGeometry relative="1" x="0.4321" as="geometry">
-            <mxPoint as="offset" />
-            <Array as="points">
-              <mxPoint x="1055" y="100" />
-              <mxPoint x="820" y="100" />
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e_keel_ghcr" edge="1" parent="1" source="keel" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" target="ghcr" value="poll :latest">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="970" y="570.03" />
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e_gha_ghcr" edge="1" parent="1" source="gha" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" target="ghcr" value="build &amp;amp; push">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-      </root>
-    </mxGraphModel>
-  </diagram>
+<mxfile host="65bd71144e">
+    <diagram id="fiapx-aws-topology" name="AWS Topology">
+        <mxGraphModel dx="1640" dy="923" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="880" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="FIAP X — AWS / EKS Cloud Topology" style="text;html=1;fontSize=20;fontStyle=1;fontColor=light-dark(#1F2937,#FFFFFF);align=left;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="24" width="620" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="awsBox" value="AWS Cloud  ·  us-east-1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDF6EC;strokeColor=#FF9900;strokeWidth=2;verticalAlign=top;fontStyle=1;fontSize=14;fontColor=light-dark(#1F2937,#FFFFFF);arcSize=4;" parent="1" vertex="1">
+                    <mxGeometry x="240" y="110" width="960" height="600" as="geometry"/>
+                </mxCell>
+                <mxCell id="vpcBox" value="VPC 10.0.0.0/16  ·  public subnets · 2 AZs · no NAT" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;dashed=1;verticalAlign=top;fontStyle=1;fontSize=12;fontColor=light-dark(#1F2937,#FFFFFF);arcSize=4;" parent="1" vertex="1">
+                    <mxGeometry x="270" y="160" width="640" height="520" as="geometry"/>
+                </mxCell>
+                <mxCell id="eksBox" value="Amazon EKS — fiapx  ·  k8s 1.30 · nodes 2x t3.medium · IMDSv2 hop-limit 2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEF3FF;strokeColor=#326CE5;verticalAlign=top;fontStyle=1;fontSize=12;fontColor=light-dark(#1F2937,#FFFFFF);arcSize=4;" parent="1" vertex="1">
+                    <mxGeometry x="295" y="190" width="590" height="465" as="geometry"/>
+                </mxCell>
+                <mxCell id="nsApp" value="namespace: fiapx" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6F8F6;strokeColor=#9AA0A6;dashed=1;verticalAlign=top;fontStyle=2;fontSize=11;fontColor=light-dark(#1F2937,#FFFFFF);arcSize=6;" parent="1" vertex="1">
+                    <mxGeometry x="315" y="220" width="550" height="245" as="geometry"/>
+                </mxCell>
+                <mxCell id="nsEso" value="namespace: external-secrets" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8EF;strokeColor=#E0A44A;dashed=1;verticalAlign=top;fontStyle=2;fontSize=11;fontColor=light-dark(#1F2937,#FFFFFF);arcSize=6;" parent="1" vertex="1">
+                    <mxGeometry x="315" y="485" width="345" height="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="nsKeel" value="namespace: keel" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8EF;strokeColor=#E0A44A;dashed=1;verticalAlign=top;fontStyle=2;fontSize=11;fontColor=light-dark(#1F2937,#FFFFFF);arcSize=6;" parent="1" vertex="1">
+                    <mxGeometry x="680" y="485" width="185" height="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="gw" value="gateway&#xa;x2 · Svc + Ingress" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#326CE5;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" parent="1" vertex="1">
+                    <mxGeometry x="335" y="270" width="155" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="wk" value="worker&#xa;x2 + HPA 2-6 · ffmpeg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#326CE5;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" parent="1" vertex="1">
+                    <mxGeometry x="505" y="270" width="175" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="nt" value="notifier" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#326CE5;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" parent="1" vertex="1">
+                    <mxGeometry x="697.5" y="270" width="150" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="rd" value="redis" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9673A6;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" parent="1" vertex="1">
+                    <mxGeometry x="335" y="405" width="155" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="mq" value="rabbitmq" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9673A6;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" parent="1" vertex="1">
+                    <mxGeometry x="502.5" y="405" width="175" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="mp" value="mailpit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9673A6;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" parent="1" vertex="1">
+                    <mxGeometry x="700" y="405" width="150" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="eso" value="External Secrets&#xa;Operator" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E0A44A;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" parent="1" vertex="1">
+                    <mxGeometry x="330" y="530" width="150" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="sec" value="Secret:&#xa;fiapx-secrets" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E0A44A;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" parent="1" vertex="1">
+                    <mxGeometry x="495" y="530" width="150" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="keel" value="Keel" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E0A44A;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" parent="1" vertex="1">
+                    <mxGeometry x="700" y="530" width="150" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="rds" value="Amazon RDS&#xa;PostgreSQL 16.9 (private)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E9F0FF;strokeColor=#2E5AAC;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" parent="1" vertex="1">
+                    <mxGeometry x="1000" y="215" width="180" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="s3" value="Amazon S3&#xa;fiapx-videos (encrypted)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F6EE;strokeColor=#2E8B57;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" parent="1" vertex="1">
+                    <mxGeometry x="1000" y="335" width="180" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="sm" value="AWS Secrets Manager&#xa;fiapx/app" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDECEC;strokeColor=#C0392B;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" parent="1" vertex="1">
+                    <mxGeometry x="1000" y="455" width="180" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="client" value="Client / browser" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#555555;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" parent="1" vertex="1">
+                    <mxGeometry x="60" y="370" width="140" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="gha" value="GitHub Actions (CI)&#xa;test · build · Sonar" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0F0F0;strokeColor=#24292E;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" parent="1" vertex="1">
+                    <mxGeometry x="700" y="30" width="190" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="ghcr" value="GHCR (ghcr.io)&#xa;public images" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0F0F0;strokeColor=#24292E;fontSize=11;shadow=1;arcSize=12;fontColor=light-dark(#1F2937,#FFFFFF);" parent="1" vertex="1">
+                    <mxGeometry x="960" y="30" width="190" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend" value="Solid = runtime dependency  ·  Dashed = image pull / secret injection.&#xa;Pods and the External Secrets Operator authenticate to AWS via the EKS node role (LabRole) over IMDS — no IRSA in AWS Academy Learner Lab." style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=light-dark(#1F2937,#FFFFFF);spacingLeft=6;" parent="1" vertex="1">
+                    <mxGeometry x="240" y="720" width="960" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_client_gw" value="&lt;span style=&quot;&quot;&gt;HTTPS&lt;/span&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" parent="1" source="client" target="gw" edge="1">
+                    <mxGeometry x="-0.0744" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                        <Array as="points">
+                            <mxPoint x="130" y="350"/>
+                            <mxPoint x="390" y="350"/>
+                        </Array>
+                        <mxPoint x="140" y="340.0344827586207" as="sourcePoint"/>
+                        <mxPoint x="352.48275862068976" y="290" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_gw_rds" value="SQL 5432" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="gw" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="430" y="240"/>
+                        </Array>
+                        <mxPoint x="416.22" y="269.82000000000005" as="sourcePoint"/>
+                        <mxPoint x="1000" y="239.99857142857135" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_gw_s3" value="S3 API · node role" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="gw" target="s3" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="413" y="250"/>
+                            <mxPoint x="1090" y="250"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_gw_rd" value="cache / rate-limit" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="gw" target="rd" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="400" y="370"/>
+                            <mxPoint x="400" y="370"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_gw_mq" value="publish jobs (AMQP)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="gw" target="mq" edge="1">
+                    <mxGeometry x="-0.1351" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="440" y="360"/>
+                            <mxPoint x="550" y="360"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_mq_wk" value="deliver" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="mq" target="wk" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="590" y="350"/>
+                            <mxPoint x="590" y="350"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_wk_s3" value="get source / put zip" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="wk" target="s3" edge="1">
+                    <mxGeometry x="0.5311" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                        <Array as="points">
+                            <mxPoint x="620" y="350"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_mq_gw" value="deliver status events" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="mq" target="gw" edge="1">
+                    <mxGeometry x="-0.1034" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="550" y="340"/>
+                            <mxPoint x="412" y="340"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_wk_mq" value="status &amp; failure events" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="wk" target="mq" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="590" y="350"/>
+                            <mxPoint x="590" y="350"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_mq_nt" value="deliver" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="mq" target="nt" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="630" y="380"/>
+                            <mxPoint x="772.52" y="380"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_nt_mp" value="SMTP" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="nt" target="mp" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="790" y="360"/>
+                            <mxPoint x="790" y="360"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_eso_sm" value="read fiapx/app · node role / IMDS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" parent="1" source="eso" target="sm" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="405.03" y="610.03"/>
+                            <mxPoint x="1080" y="610.03"/>
+                            <mxPoint x="1080" y="525"/>
+                        </Array>
+                        <mxPoint x="467.5" y="612.4827586206898" as="sourcePoint"/>
+                        <mxPoint x="1077.5" y="580" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_eso_sec" value="sync" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="eso" target="sec" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_sec_app" value="envFrom" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#9AA0A6;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=open;" parent="1" source="sec" target="nsApp" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_ghcr_app" value="image pull" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#9AA0A6;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=open;" parent="1" source="ghcr" target="nsApp" edge="1">
+                    <mxGeometry x="0.4321" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                        <Array as="points">
+                            <mxPoint x="1055" y="100"/>
+                            <mxPoint x="820" y="100"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_keel_ghcr" value="poll :latest" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="keel" target="ghcr" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="970" y="570.03"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_gha_ghcr" value="build &amp;amp; push" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B6B6B;fontColor=light-dark(#1F2937,#FFFFFF);fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="gha" target="ghcr" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
 </mxfile>

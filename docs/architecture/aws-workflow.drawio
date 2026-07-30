@@ -1,103 +1,181 @@
-<mxfile host="app.diagrams.net" type="device">
-  <diagram id="fiapx-workflow" name="Workflow">
-    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="880" math="0" shadow="0">
-      <root>
-        <mxCell id="0" />
-        <mxCell id="1" parent="0" />
-
-        <mxCell id="title" value="FIAP X — Workflow (runtime &amp; CI/CD)" style="text;html=1;fontSize=20;fontStyle=1;fontColor=#1F2937;align=left;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="40" y="20" width="640" height="34" as="geometry" />
-        </mxCell>
-
-        <mxCell id="lblRuntime" value="RUNTIME  —  request &amp; processing" style="text;html=1;fontSize=13;fontStyle=1;fontColor=#1565C0;align=left;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="40" y="80" width="360" height="24" as="geometry" />
-        </mxCell>
-
-        <mxCell id="user" value="User" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#555555;fontSize=11;shadow=1;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="60" y="150" width="120" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="gw" value="gateway" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1E88E5;fontSize=11;shadow=1;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="250" y="150" width="150" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="mq" value="RabbitMQ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9673A6;fontSize=11;shadow=1;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="470" y="150" width="150" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="wk" value="worker · ffmpeg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1E88E5;fontSize=11;shadow=1;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="690" y="150" width="160" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="nt" value="notifier" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1E88E5;fontSize=11;shadow=1;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="910" y="150" width="140" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="mp" value="Mailpit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9673A6;fontSize=11;shadow=1;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="1110" y="150" width="120" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="s3" value="Amazon S3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F6EE;strokeColor=#2E8B57;fontSize=11;shadow=1;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="380" y="290" width="140" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="rds" value="Amazon RDS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E9F0FF;strokeColor=#2E5AAC;fontSize=11;shadow=1;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="600" y="290" width="140" height="50" as="geometry" />
-        </mxCell>
-
-        <mxCell id="r1" value="1 POST /videos (JWT)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" edge="1" parent="1" source="user" target="gw"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="r2" value="2 put source" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" edge="1" parent="1" source="gw" target="s3"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="r3" value="3 INSERT PENDING" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" edge="1" parent="1" source="gw" target="rds"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="r4" value="4 publish job" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" edge="1" parent="1" source="gw" target="mq"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="r5" value="5 202 Accepted" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=open;" edge="1" parent="1" source="gw" target="user"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="r6" value="6 deliver job" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" edge="1" parent="1" source="mq" target="wk"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="r8" value="7 get source · 9 put zip" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" edge="1" parent="1" source="wk" target="s3"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="r9" value="8 ffmpeg + zip" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" edge="1" parent="1" source="wk" target="wk"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="r7" value="10 status events (proc/done/fail)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" edge="1" parent="1" source="wk" target="mq"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="r11g" value="11 deliver status" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" edge="1" parent="1" source="mq" target="gw"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="r11r" value="12 apply PROCESSING/DONE/FAILED" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" edge="1" parent="1" source="gw" target="rds"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="r12b" value="13 deliver (on failure)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=open;" edge="1" parent="1" source="mq" target="nt"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="r12c" value="14 email" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=open;" edge="1" parent="1" source="nt" target="mp"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="r13" value="15 GET status / download" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;exitX=0.5;exitY=0;entryX=0.5;entryY=0;" edge="1" parent="1" source="user" target="gw"><mxGeometry relative="1" as="geometry" /></mxCell>
-
-        <mxCell id="lblCicd" value="CI/CD &amp; SECRETS" style="text;html=1;fontSize=13;fontStyle=1;fontColor=#1B5E20;align=left;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="40" y="430" width="360" height="24" as="geometry" />
-        </mxCell>
-
-        <mxCell id="dev" value="Developer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#555555;fontSize=11;shadow=1;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="60" y="480" width="120" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="gh" value="GitHub Actions&#10;test · build · Sonar" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0F0F0;strokeColor=#24292E;fontSize=11;shadow=1;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="240" y="478" width="170" height="55" as="geometry" />
-        </mxCell>
-        <mxCell id="ghcr" value="GHCR :latest" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0F0F0;strokeColor=#24292E;fontSize=11;shadow=1;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="480" y="480" width="150" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="keel" value="Keel (in-cluster)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E0A44A;fontSize=11;shadow=1;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="480" y="600" width="150" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="pods" value="gateway / worker / notifier&#10;(Deployments)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1E88E5;fontSize=11;shadow=1;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="960" y="540" width="200" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="tf" value="Terraform" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#5C4EE5;fontSize=11;shadow=1;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="60" y="680" width="120" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="sm" value="Secrets Manager&#10;fiapx/app" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDECEC;strokeColor=#C0392B;fontSize=11;shadow=1;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="240" y="678" width="170" height="55" as="geometry" />
-        </mxCell>
-        <mxCell id="eso" value="External Secrets Operator" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E0A44A;fontSize=11;shadow=1;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="480" y="700" width="180" height="55" as="geometry" />
-        </mxCell>
-        <mxCell id="sec" value="Secret fiapx-secrets" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E0A44A;fontSize=11;shadow=1;arcSize=12;" vertex="1" parent="1">
-          <mxGeometry x="710" y="700" width="160" height="55" as="geometry" />
-        </mxCell>
-
-        <mxCell id="cA" value="A push to main" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2E7D32;fontColor=#1B5E20;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" edge="1" parent="1" source="dev" target="gh"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="cB" value="B build &amp; push" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2E7D32;fontColor=#1B5E20;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" edge="1" parent="1" source="gh" target="ghcr"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="cC" value="C poll :latest" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2E7D32;fontColor=#1B5E20;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" edge="1" parent="1" source="keel" target="ghcr"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="cD" value="D rolling update" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2E7D32;fontColor=#1B5E20;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" edge="1" parent="1" source="keel" target="pods"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="cE" value="E write secret" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2E7D32;fontColor=#1B5E20;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" edge="1" parent="1" source="tf" target="sm"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="cF" value="F read · node role/IMDS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2E7D32;fontColor=#1B5E20;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" edge="1" parent="1" source="eso" target="sm"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="cG" value="G create / sync" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2E7D32;fontColor=#1B5E20;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" edge="1" parent="1" source="eso" target="sec"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="cH" value="H envFrom" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#2E7D32;fontColor=#1B5E20;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=open;" edge="1" parent="1" source="sec" target="pods"><mxGeometry relative="1" as="geometry" /></mxCell>
-
-        <mxCell id="legend" value="Blue = runtime request / processing   ·   Green = CI/CD &amp; secrets sync   ·   Dashed = async / return" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#5F6368;" vertex="1" parent="1">
-          <mxGeometry x="40" y="800" width="900" height="30" as="geometry" />
-        </mxCell>
-      </root>
-    </mxGraphModel>
-  </diagram>
+<mxfile host="65bd71144e">
+    <diagram id="fiapx-workflow" name="Workflow">
+        <mxGraphModel dx="1777" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="880" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="FIAP X — Workflow (runtime &amp; CI/CD)" style="text;html=1;fontSize=20;fontStyle=1;fontColor=#1F2937;align=left;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="20" width="640" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="lblRuntime" value="RUNTIME  —  request &amp; processing" style="text;html=1;fontSize=13;fontStyle=1;fontColor=#1565C0;align=left;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="80" width="360" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="user" value="User" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#555555;fontSize=11;shadow=1;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="30" y="150" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="gw" value="gateway" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1E88E5;fontSize=11;shadow=1;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="250" y="150" width="150" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="mq" value="RabbitMQ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9673A6;fontSize=11;shadow=1;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="470" y="90" width="150" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="wk" value="worker · ffmpeg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1E88E5;fontSize=11;shadow=1;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="740" y="180" width="160" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="nt" value="notifier" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1E88E5;fontSize=11;shadow=1;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="960" y="150" width="140" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="mp" value="Mailpit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9673A6;fontSize=11;shadow=1;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="1130" y="67" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="s3" value="Amazon S3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F6EE;strokeColor=#2E8B57;fontSize=11;shadow=1;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="480" y="320" width="140" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="rds" value="Amazon RDS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E9F0FF;strokeColor=#2E5AAC;fontSize=11;shadow=1;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="250" y="330" width="140" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="r1" value="1 POST /videos (JWT)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="user" target="gw" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="r2" value="2 put source" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="gw" target="s3" edge="1">
+                    <mxGeometry x="-0.3104" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="550" y="180"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r3" value="3 INSERT PENDING" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="gw" target="rds" edge="1">
+                    <mxGeometry x="-0.3846" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="290" y="260"/>
+                            <mxPoint x="290" y="260"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r4" value="4 publish job" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="gw" target="mq" edge="1">
+                    <mxGeometry x="-0.4444" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="545" y="160"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r5" value="5 202 Accepted" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=open;" parent="1" source="gw" target="user" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="r6" value="6 deliver job" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="mq" target="wk" edge="1">
+                    <mxGeometry x="0.5745" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r8" value="7 get source · 9 put zip" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="wk" target="s3" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="770" y="250"/>
+                            <mxPoint x="550" y="250"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r9" value="8 ffmpeg + zip" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="wk" target="wk" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="r7" value="10 status events (proc/done/fail)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;entryX=0.75;entryY=1;entryDx=0;entryDy=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="wk" target="mq" edge="1">
+                    <mxGeometry x="-0.291" relative="1" as="geometry">
+                        <mxPoint x="690" y="224.99999999999994" as="sourcePoint"/>
+                        <mxPoint x="550" y="140" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="580" y="205"/>
+                            <mxPoint x="580" y="140"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r11g" value="11 deliver status" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="mq" target="gw" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="r11r" value="12 apply PROCESSING/DONE/FAILED" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="gw" target="rds" edge="1">
+                    <mxGeometry x="0.3846" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="360" y="260"/>
+                            <mxPoint x="360" y="260"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r12b" value="13 deliver (on failure)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=open;" parent="1" source="mq" target="nt" edge="1">
+                    <mxGeometry x="0.2658" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1030" y="110"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r12c" value="14 email" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=open;" parent="1" source="nt" target="mp" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="r13" value="15 GET status / download" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1E88E5;fontColor=#1565C0;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;exitX=0.5;exitY=0;entryX=0.5;entryY=0;" parent="1" source="user" target="gw" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="lblCicd" value="CI/CD &amp; SECRETS" style="text;html=1;fontSize=13;fontStyle=1;fontColor=#1B5E20;align=left;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="430" width="360" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="dev" value="Developer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#555555;fontSize=11;shadow=1;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="480" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="gh" value="GitHub Actions&#xa;test · build · Sonar" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0F0F0;strokeColor=#24292E;fontSize=11;shadow=1;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="240" y="478" width="170" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="ghcr" value="GHCR :latest" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0F0F0;strokeColor=#24292E;fontSize=11;shadow=1;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="480" y="480" width="150" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="keel" value="Keel (in-cluster)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E0A44A;fontSize=11;shadow=1;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="480" y="600" width="150" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="pods" value="gateway / worker / notifier&#xa;(Deployments)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1E88E5;fontSize=11;shadow=1;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="960" y="540" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="tf" value="Terraform" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#5C4EE5;fontSize=11;shadow=1;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="680" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="sm" value="Secrets Manager&#xa;fiapx/app" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDECEC;strokeColor=#C0392B;fontSize=11;shadow=1;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="240" y="678" width="170" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="eso" value="External Secrets Operator" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E0A44A;fontSize=11;shadow=1;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="470" y="745" width="180" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="sec" value="Secret fiapx-secrets" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E0A44A;fontSize=11;shadow=1;arcSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="750" y="745" width="160" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="cA" value="A push to main" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2E7D32;fontColor=#1B5E20;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="dev" target="gh" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cB" value="B build &amp; push" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2E7D32;fontColor=#1B5E20;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="gh" target="ghcr" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cC" value="C poll :latest" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2E7D32;fontColor=#1B5E20;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="keel" target="ghcr" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cD" value="D rolling update" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2E7D32;fontColor=#1B5E20;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="keel" target="pods" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cE" value="E write secret" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2E7D32;fontColor=#1B5E20;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="tf" target="sm" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cF" value="F read · node role/IMDS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2E7D32;fontColor=#1B5E20;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="eso" target="sm" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cG" value="G create / sync" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2E7D32;fontColor=#1B5E20;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=block;" parent="1" source="eso" target="sec" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cH" value="H envFrom" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#2E7D32;fontColor=#1B5E20;fontSize=10;labelBackgroundColor=#FFFFFF;endArrow=open;" parent="1" source="sec" target="pods" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend" value="Blue = runtime request / processing   ·   Green = CI/CD &amp; secrets sync   ·   Dashed = async / return" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#5F6368;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="800" width="900" height="30" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
 </mxfile>
