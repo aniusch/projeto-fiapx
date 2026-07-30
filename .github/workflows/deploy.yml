@@ -27,6 +27,8 @@ jobs:
   deploy:
     name: Apply to EKS
     runs-on: ubuntu-latest
+    # AWS_* credentials live in the "lab" GitHub Environment.
+    environment: lab
     steps:
       - uses: actions/checkout@v4
 
