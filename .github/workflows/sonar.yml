@@ -11,6 +11,29 @@ jobs:
   sonarqube:
     name: SonarQube
     runs-on: ubuntu-latest
+
+    # Backing services so the integration tests run and contribute coverage.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: fiapx
+          POSTGRES_PASSWORD: fiapx
+          POSTGRES_DB: fiapx
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U fiapx -d fiapx"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+      mailpit:
+        image: axllent/mailpit:v1.20
+        ports: ["1025:1025", "8025:8025"]
+
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -22,9 +45,26 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      # Produce the coverage report SonarCloud reads (sonar.go.coverage.reportPaths).
-      - name: Run tests with coverage
-        run: go test -coverprofile=coverage.out ./...
+      - name: Install ffmpeg & psql
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg postgresql-client
+
+      - name: Apply migrations
+        env:
+          PGPASSWORD: fiapx
+        run: psql -h localhost -U fiapx -d fiapx -f migrations/0001_init.up.sql
+
+      # Unit + integration tests in one run (the integration build tag adds the
+      # integration files on top of the unit files) → merged coverage for Sonar.
+      - name: Tests with coverage
+        env:
+          TEST_POSTGRES_DSN: postgres://fiapx:fiapx@localhost:5432/fiapx?sslmode=disable
+          TEST_REDIS_ADDR: localhost:6379
+          TEST_SMTP_HOST: localhost
+          TEST_SMTP_PORT: "1025"
+          TEST_MAILPIT_API: http://localhost:8025
+        run: go test -tags=integration -coverprofile=coverage.out ./...
 
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@7006c4492b2e0ee0f816d36501671557c97f5995 # v8.1.0
