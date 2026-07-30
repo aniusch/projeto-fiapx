@@ -122,9 +122,12 @@ kubectl kustomize --load-restrictor LoadRestrictionsNone infra/k8s | kubectl app
 A separate [SonarCloud workflow](./.github/workflows/sonar.yml) runs a code-quality
 scan with Go coverage on every push and pull request.
 
-To deploy those published images to Kubernetes, point the manifests at GHCR by
-editing the `images:` block in the [AWS overlay](./infra/k8s/overlays/aws/) (or
-`infra/k8s/kustomization.yaml` for the base).
+**Deployment** to the AWS/EKS lab is split in two: a manually-dispatched
+[`deploy` workflow](./.github/workflows/deploy.yml) applies the manifests using
+the current lab credentials, while [Keel](https://keel.sh) runs in-cluster and
+auto-rolls out new images as CI pushes them to GHCR — so routine pushes deploy
+themselves ([ADR-0010](./docs/adr/0010-continuous-deployment-keel-and-manual-apply.md)).
+See the [AWS overlay README](./infra/k8s/overlays/aws/).
 
 ## Monitoring
 

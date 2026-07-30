@@ -45,6 +45,15 @@ kubectl -n fiapx get externalsecret,secret
 kubectl -n fiapx get pods -w
 ```
 
+### Or via GitHub Actions
+
+The [`Deploy (lab)`](../../../../.github/workflows/deploy.yml) workflow does steps
+1–4 for you. It is **manually dispatched** (Learner Lab credentials rotate and
+can't use OIDC), so add the current lab credentials as repo secrets —
+`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN` — refreshing them
+when they expire, then run the workflow with the `s3_bucket` input from
+`terraform output -raw s3_bucket`.
+
 ## Continuous rollout (Keel)
 
 The gateway/worker/notifier Deployments are annotated for [Keel](https://keel.sh)

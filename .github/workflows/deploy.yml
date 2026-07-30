@@ -1,0 +1,66 @@
+name: Deploy (lab)
+
+# Manual deploy to the AWS Academy lab cluster. Learner Lab credentials rotate
+# (~4h) and can't use OIDC, so this is dispatched by hand with the current lab
+# credentials stored as repo secrets:
+#   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN
+# Refresh those secrets from the lab's "AWS Details" before each run if expired.
+#
+# This applies the manifests (and ensures ESO + Keel). Ongoing image rollouts are
+# handled in-cluster by Keel, so routine pushes don't need this workflow.
+on:
+  workflow_dispatch:
+    inputs:
+      s3_bucket:
+        description: "Videos S3 bucket (terraform output s3_bucket)"
+        required: true
+      cluster_name:
+        description: "EKS cluster name"
+        required: false
+        default: "fiapx"
+      region:
+        description: "AWS region"
+        required: false
+        default: "us-east-1"
+
+jobs:
+  deploy:
+    name: Apply to EKS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (lab session)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ inputs.region }}
+
+      - uses: azure/setup-kubectl@v4
+      - uses: azure/setup-helm@v4
+
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name "${{ inputs.cluster_name }}" --region "${{ inputs.region }}"
+
+      - name: Ensure External Secrets Operator and Keel
+        run: |
+          helm repo add external-secrets https://charts.external-secrets.io
+          helm repo add keel https://charts.keel.sh
+          helm repo update
+          helm upgrade --install external-secrets external-secrets/external-secrets \
+            -n external-secrets --create-namespace --wait
+          helm upgrade --install keel keel/keel -n keel --create-namespace --wait
+
+      - name: Apply the AWS overlay
+        run: |
+          kubectl kustomize --load-restrictor LoadRestrictionsNone infra/k8s/overlays/aws \
+            | sed "s/REPLACE_WITH_TF_S3_BUCKET/${{ inputs.s3_bucket }}/g" \
+            | kubectl apply -f -
+
+      - name: Wait for rollout
+        run: |
+          for d in gateway worker notifier; do
+            kubectl -n fiapx rollout status "deploy/$d" --timeout=180s
+          done
