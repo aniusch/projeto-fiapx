@@ -18,7 +18,7 @@ variable "allowed_security_group_ids" {
 
 variable "engine_version" {
   type    = string
-  default = "16.4"
+  default = "16.9"
 }
 
 variable "instance_class" {

@@ -75,7 +75,7 @@ variable "node_disk_size" {
 # --- RDS ---
 variable "db_engine_version" {
   type    = string
-  default = "16.4"
+  default = "16.9"
 }
 
 variable "db_instance_class" {

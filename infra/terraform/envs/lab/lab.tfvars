@@ -16,7 +16,7 @@ node_min_size      = 2
 node_max_size      = 4
 node_disk_size     = 20
 
-db_engine_version    = "16.4"
+db_engine_version    = "16.9"
 db_instance_class    = "db.t3.micro"
 db_allocated_storage = 20
 db_name              = "fiapx"
