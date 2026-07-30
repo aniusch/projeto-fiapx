@@ -29,7 +29,18 @@ func (p *Publisher) PublishVideoJob(ctx context.Context, job VideoJob) error {
 	return p.publish(ctx, ExchangeJobs, RoutingKeyJob, job)
 }
 
-// PublishVideoFailed sends a failure event to the events exchange.
+// PublishVideoProcessing announces that the worker has started a job.
+func (p *Publisher) PublishVideoProcessing(ctx context.Context, event VideoProcessingEvent) error {
+	return p.publish(ctx, ExchangeEvents, RoutingKeyProcessing, event)
+}
+
+// PublishVideoDone announces a successful result (its archive key and frame count).
+func (p *Publisher) PublishVideoDone(ctx context.Context, event VideoDoneEvent) error {
+	return p.publish(ctx, ExchangeEvents, RoutingKeyDone, event)
+}
+
+// PublishVideoFailed sends a failure event to the events exchange. It fans out to
+// both the notifier (email) and the gateway (mark the row FAILED).
 func (p *Publisher) PublishVideoFailed(ctx context.Context, event VideoFailedEvent) error {
 	return p.publish(ctx, ExchangeEvents, RoutingKeyFailed, event)
 }

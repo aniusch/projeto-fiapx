@@ -9,43 +9,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/aniusch/projeto-fiapx/internal/domain"
 	"github.com/aniusch/projeto-fiapx/internal/messaging"
 )
 
 // --- Fakes ----------------------------------------------------------------
-
-type fakeVideos struct {
-	video      domain.Video
-	getErr     error
-	processing bool
-	done       bool
-	failed     bool
-	failReason string
-}
-
-func (f *fakeVideos) GetByID(context.Context, uuid.UUID) (domain.Video, error) {
-	return f.video, f.getErr
-}
-func (f *fakeVideos) MarkProcessing(context.Context, uuid.UUID) error {
-	f.processing = true
-	return nil
-}
-func (f *fakeVideos) MarkDone(_ context.Context, _ uuid.UUID, _ string, _ int) error {
-	f.done = true
-	return nil
-}
-func (f *fakeVideos) MarkFailed(_ context.Context, _ uuid.UUID, reason string) error {
-	f.failed = true
-	f.failReason = reason
-	return nil
-}
-
-type fakeUsers struct{ email string }
-
-func (f *fakeUsers) GetByID(context.Context, uuid.UUID) (domain.User, error) {
-	return domain.User{Email: f.email}, nil
-}
 
 type fakeObjects struct{ putKeys []string }
 
@@ -58,18 +25,30 @@ func (f *fakeObjects) Put(_ context.Context, key string, r io.Reader, _ int64, _
 	return nil
 }
 
-type fakeEvents struct{ published []messaging.VideoFailedEvent }
+// fakeEvents records every lifecycle event the worker publishes, standing in for
+// the real RabbitMQ publisher.
+type fakeEvents struct {
+	processing []messaging.VideoProcessingEvent
+	done       []messaging.VideoDoneEvent
+	failed     []messaging.VideoFailedEvent
+}
 
+func (f *fakeEvents) PublishVideoProcessing(_ context.Context, e messaging.VideoProcessingEvent) error {
+	f.processing = append(f.processing, e)
+	return nil
+}
+func (f *fakeEvents) PublishVideoDone(_ context.Context, e messaging.VideoDoneEvent) error {
+	f.done = append(f.done, e)
+	return nil
+}
 func (f *fakeEvents) PublishVideoFailed(_ context.Context, e messaging.VideoFailedEvent) error {
-	f.published = append(f.published, e)
+	f.failed = append(f.failed, e)
 	return nil
 }
 
-func newTestWorker(t *testing.T, v *fakeVideos, u *fakeUsers, o *fakeObjects, e *fakeEvents) *Worker {
+func newTestWorker(t *testing.T, o *fakeObjects, e *fakeEvents) *Worker {
 	t.Helper()
 	return New(Deps{
-		Videos:  v,
-		Users:   u,
 		Objects: o,
 		Events:  e,
 		Config: Config{
@@ -83,65 +62,79 @@ func newTestWorker(t *testing.T, v *fakeVideos, u *fakeUsers, o *fakeObjects, e 
 
 // --- Tests ----------------------------------------------------------------
 
-func TestHandleIdempotentSkip(t *testing.T) {
-	v := &fakeVideos{video: domain.Video{ID: uuid.New(), Status: domain.StatusDone}}
-	w := newTestWorker(t, v, &fakeUsers{}, &fakeObjects{}, &fakeEvents{})
-
-	if err := w.Handle(context.Background(), messaging.VideoJob{VideoID: v.video.ID}); err != nil {
-		t.Fatalf("Handle: %v", err)
-	}
-	if v.processing || v.failed {
-		t.Fatal("an already-DONE video must not be reprocessed")
-	}
-}
-
-func TestHandleUnknownVideoDropped(t *testing.T) {
-	v := &fakeVideos{getErr: domain.ErrNotFound}
-	w := newTestWorker(t, v, &fakeUsers{}, &fakeObjects{}, &fakeEvents{})
-
-	if err := w.Handle(context.Background(), messaging.VideoJob{VideoID: uuid.New()}); err != nil {
-		t.Fatalf("unknown video should be dropped without error, got %v", err)
-	}
-}
-
 func TestHandleProcessingFailurePublishesEvent(t *testing.T) {
 	id := uuid.New()
 	userID := uuid.New()
-	v := &fakeVideos{video: domain.Video{ID: id, UserID: userID, Status: domain.StatusPending, SourceKey: "sources/x.mp4"}}
-	users := &fakeUsers{email: "owner@example.com"}
 	events := &fakeEvents{}
 
-	w := newTestWorker(t, v, users, &fakeObjects{}, events)
+	w := newTestWorker(t, &fakeObjects{}, events)
 
-	job := messaging.VideoJob{VideoID: id, UserID: userID, SourceKey: "sources/x.mp4", OriginalName: "x.mp4"}
+	job := messaging.VideoJob{
+		VideoID:      id,
+		UserID:       userID,
+		Email:        "owner@example.com",
+		SourceKey:    "sources/x.mp4",
+		OriginalName: "x.mp4",
+	}
 	// ffmpeg is bogus, so processing fails -> handled as FAILED, Handle returns nil.
 	if err := w.Handle(context.Background(), job); err != nil {
 		t.Fatalf("processing failure should be handled (nil error), got %v", err)
 	}
 
-	if !v.processing {
-		t.Error("expected MarkProcessing to have been called")
+	// The worker always announces that it started before doing any work.
+	if len(events.processing) != 1 || events.processing[0].VideoID != id {
+		t.Errorf("expected a single processing event for %s, got %+v", id, events.processing)
 	}
-	if !v.failed {
-		t.Fatal("expected MarkFailed to have been called")
+	if len(events.done) != 0 {
+		t.Errorf("a failed job must not emit a done event, got %+v", events.done)
 	}
-	// The stored/emailed reason must be the friendly message, never raw ffmpeg
-	// output or the binary path.
-	if !strings.Contains(v.failReason, "não pôde ser processado") {
-		t.Errorf("expected a user-friendly reason, got %q", v.failReason)
+	if len(events.failed) != 1 {
+		t.Fatalf("expected 1 failure event, got %d", len(events.failed))
+	}
+
+	got := events.failed[0]
+	// The emailed reason must be the friendly message, never raw ffmpeg output.
+	if !strings.Contains(got.Reason, "não pôde ser processado") {
+		t.Errorf("expected a user-friendly reason, got %q", got.Reason)
 	}
 	for _, leak := range []string{"ffmpeg", "fork/exec", "/nonexistent"} {
-		if strings.Contains(v.failReason, leak) {
-			t.Errorf("user-facing reason leaks technical detail %q: %s", leak, v.failReason)
+		if strings.Contains(got.Reason, leak) {
+			t.Errorf("user-facing reason leaks technical detail %q: %s", leak, got.Reason)
 		}
 	}
-	if len(events.published) != 1 {
-		t.Fatalf("expected 1 failure event, got %d", len(events.published))
+	// The owner's address rides along in the job (the worker has no database).
+	if got.Email != "owner@example.com" {
+		t.Errorf("event email = %q, want owner@example.com", got.Email)
 	}
-	if events.published[0].Reason != v.failReason {
-		t.Errorf("event reason %q != stored reason %q", events.published[0].Reason, v.failReason)
+	if got.VideoID != id {
+		t.Errorf("event video id = %s, want %s", got.VideoID, id)
 	}
-	if events.published[0].Email != "owner@example.com" {
-		t.Errorf("event email = %q, want owner@example.com", events.published[0].Email)
+}
+
+func TestHandleMissingSourcePublishesFailure(t *testing.T) {
+	// A source that can't be downloaded is a processing failure, not an infra
+	// error: it is reported as failed and the message is acked (nil error).
+	events := &fakeEvents{}
+	w := New(Deps{
+		Objects: &failingGetObjects{},
+		Events:  events,
+		Config:  Config{FFmpegPath: "/bin/true", FPS: 1, WorkDir: t.TempDir(), JobTimeout: 30 * time.Second},
+	})
+
+	job := messaging.VideoJob{VideoID: uuid.New(), Email: "a@b.com", SourceKey: "missing", OriginalName: "x.mp4"}
+	if err := w.Handle(context.Background(), job); err != nil {
+		t.Fatalf("a missing source should be handled (nil error), got %v", err)
 	}
+	if len(events.failed) != 1 {
+		t.Fatalf("expected 1 failure event, got %d", len(events.failed))
+	}
+	if !strings.Contains(events.failed[0].Reason, "recuperar o vídeo") {
+		t.Errorf("expected the download-failure message, got %q", events.failed[0].Reason)
+	}
+}
+
+type failingGetObjects struct{ fakeObjects }
+
+func (f *failingGetObjects) Get(context.Context, string) (io.ReadCloser, error) {
+	return nil, io.ErrUnexpectedEOF
 }

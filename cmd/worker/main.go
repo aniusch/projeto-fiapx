@@ -1,6 +1,7 @@
 // Command worker consumes video-processing jobs from RabbitMQ, extracts frames
-// with ffmpeg, zips them, uploads the result to object storage, and updates the
-// job status in Postgres. On failure it publishes an event for the notifier.
+// with ffmpeg, zips them, and uploads the result to object storage. It owns no
+// database: it reports every state transition (processing/done/failed) as an
+// event, which the gateway — the sole writer of the videos table — applies.
 package main
 
 import (
@@ -15,7 +16,6 @@ import (
 	"github.com/aniusch/projeto-fiapx/internal/messaging"
 	"github.com/aniusch/projeto-fiapx/internal/observability"
 	"github.com/aniusch/projeto-fiapx/internal/platform"
-	"github.com/aniusch/projeto-fiapx/internal/repository/postgres"
 	"github.com/aniusch/projeto-fiapx/internal/storage"
 	"github.com/aniusch/projeto-fiapx/internal/worker"
 )
@@ -36,13 +36,6 @@ func main() {
 	defer cancelStartup()
 
 	// --- Dependencies -----------------------------------------------------
-	pool, err := platform.NewPostgresPool(startupCtx, cfg.Postgres.DSN)
-	if err != nil {
-		logger.Error("connect postgres", "error", err)
-		os.Exit(1)
-	}
-	defer pool.Close()
-
 	objectStore, err := storage.New(cfg.Storage)
 	if err != nil {
 		logger.Error("create object store client", "error", err)
@@ -84,8 +77,6 @@ func main() {
 
 	// --- Build the worker -------------------------------------------------
 	w := worker.New(worker.Deps{
-		Videos:  postgres.NewVideoRepository(pool),
-		Users:   postgres.NewUserRepository(pool),
 		Objects: objectStore,
 		Events:  messaging.NewPublisher(publishCh),
 		Metrics: metrics,

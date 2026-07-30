@@ -95,19 +95,16 @@ services:
     build:
       context: .
       dockerfile: infra/docker/worker.Dockerfile
+    # The worker is stateless: it reads/writes object storage and RabbitMQ only,
+    # and reports status via events. It never touches Postgres.
     depends_on:
-      postgres:
-        condition: service_healthy
       rabbitmq:
         condition: service_healthy
       minio:
         condition: service_started
-      migrate:
-        condition: service_completed_successfully
     environment:
       APP_ENV: development
       LOG_LEVEL: info
-      POSTGRES_DSN: postgres://fiapx:fiapx@postgres:5432/fiapx?sslmode=disable
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
       S3_ENDPOINT: minio:9000
       S3_BUCKET: fiapx-videos

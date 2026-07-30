@@ -43,6 +43,15 @@ func (f *fakeUsers) GetByEmail(_ context.Context, email string) (domain.User, er
 	return u, nil
 }
 
+func (f *fakeUsers) GetByID(_ context.Context, id uuid.UUID) (domain.User, error) {
+	for _, u := range f.byEmail {
+		if u.ID == id {
+			return u, nil
+		}
+	}
+	return domain.User{}, domain.ErrNotFound
+}
+
 type fakeVideos struct{ items map[uuid.UUID]domain.Video }
 
 func (f *fakeVideos) Create(_ context.Context, v *domain.Video) error {

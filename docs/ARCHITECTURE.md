@@ -38,9 +38,9 @@ C4Container
 
     Container_Boundary(fiapx, "FIAP X") {
         Container(gateway, "Gateway", "Go, Gin", "Auth (JWT), uploads, status, downloads. Publishes jobs.")
-        Container(worker, "Worker", "Go, ffmpeg", "Consumes jobs, extracts frames, zips, uploads, updates status. Scales horizontally.")
+        Container(worker, "Worker", "Go, ffmpeg", "Stateless: consumes jobs, extracts frames, zips, uploads, emits status events. Scales horizontally.")
         Container(notifier, "Notifier", "Go", "Consumes failure events and emails the user.")
-        ContainerDb(pg, "PostgreSQL", "Postgres 16", "Users and video job state")
+        ContainerDb(pg, "PostgreSQL", "Postgres 16", "Users and video job state (gateway-owned)")
         ContainerDb(redis, "Redis", "Redis 7", "Token cache and rate-limit counters")
         ContainerQueue(mq, "RabbitMQ", "AMQP 0-9-1", "Durable job queue + failure events, with a DLQ")
         ContainerDb(s3, "Object storage", "S3 / MinIO", "Source videos and result ZIPs")
@@ -53,8 +53,8 @@ C4Container
     Rel(gateway, mq, "Publishes jobs", "AMQP")
     Rel(mq, worker, "Delivers jobs", "AMQP")
     Rel(worker, s3, "Reads source, writes ZIP", "S3 API")
-    Rel(worker, pg, "Updates status", "SQL")
-    Rel(worker, mq, "Publishes failures", "AMQP")
+    Rel(worker, mq, "Publishes status & failures", "AMQP")
+    Rel(mq, gateway, "Delivers status events", "AMQP")
     Rel(mq, notifier, "Delivers failures", "AMQP")
     Rel(notifier, mail, "Sends email", "SMTP")
 
@@ -71,7 +71,7 @@ More views: [system context](./architecture/c4-context.md) ·
 | Service | Package | Responsibility |
 | ------- | ------- | -------------- |
 | **gateway** | [`cmd/gateway`](../cmd/gateway), [`internal/gateway`](../internal/gateway) | Public HTTP API: register/login (JWT), upload (→ S3 + enqueue), per-user status, download. Does no heavy processing. |
-| **worker** | [`cmd/worker`](../cmd/worker), [`internal/worker`](../internal/worker), [`internal/processing`](../internal/processing) | Consumes jobs, runs ffmpeg, zips frames, uploads result, updates status. Publishes a failure event on error. The only CPU-heavy tier. |
+| **worker** | [`cmd/worker`](../cmd/worker), [`internal/worker`](../internal/worker), [`internal/processing`](../internal/processing) | **Stateless** — owns no database. Consumes jobs, runs ffmpeg, zips frames, uploads result, and emits `processing`/`done`/`failed` events. The only CPU-heavy tier. |
 | **notifier** | [`cmd/notifier`](../cmd/notifier), [`internal/notifier`](../internal/notifier) | Consumes failure events and emails the affected user. |
 
 Shared building blocks live in `internal/`: `config` (env config), `domain`
@@ -84,6 +84,8 @@ Shared building blocks live in `internal/`: `config` (env config), `domain`
 - **Postgres** is the system of record: `users` and `videos`
   ([schema / DB creation script](../migrations/0001_init.up.sql)). `status` is a
   Postgres ENUM; a trigger maintains `updated_at`; the video→user FK cascades.
+  **Only the gateway connects to it** — the worker and notifier are stateless, so
+  each service is its own quantum ([ADR-0011](./adr/0011-database-per-service-single-writer.md)).
 - **Redis** caches nothing critical — it holds rate-limit counters (and is the
   place to cache token/session lookups).
 - **S3 / MinIO** stores the large blobs (source videos under `sources/…`, result
@@ -99,8 +101,12 @@ RabbitMQ decouples accepting work from doing it. Topology
 - **jobs**: `videos.jobs` (durable) — the gateway publishes one persistent
   message per upload; workers consume competitively. Rejected messages
   dead-letter to `videos.jobs.dlq`.
-- **events**: `videos.events` (topic) → `videos.notifications` — the worker
-  publishes failures; the notifier consumes them.
+- **events**: `videos.events` (topic) — the worker publishes lifecycle events
+  (`video.processing` / `video.done` / `video.failed`). Two queues bind to it:
+  `videos.status` (the gateway applies each event to the `videos` table it alone
+  writes) and `videos.notifications` (the notifier emails the user on failure). A
+  failure fans out to both. This is single-writer **event-carried state transfer**
+  ([ADR-0011](./adr/0011-database-per-service-single-writer.md)).
 
 The [runtime flow](./architecture/runtime-upload-flow.md) shows the full
 sequence. Uploads return **202 Accepted** immediately after enqueuing.
@@ -113,9 +119,11 @@ sequence. Uploads return **202 Accepted** immediately after enqueuing.
 - **Spike safety**: the durable queue buffers bursts; the gateway only enqueues,
   so it stays responsive. Nothing is processed inline.
 - **At-least-once + idempotency**: manual acks mean a crash mid-job redelivers
-  the message. `worker.Handle` is idempotent (skips already-`DONE` videos,
-  writes to a deterministic result key). Infra errors retry once then
-  dead-letter; processing failures are recorded and acked.
+  the message. Reprocessing is safe — the result uses a deterministic key
+  (overwrite, not duplicate), and the gateway applies status events idempotently
+  (`MarkProcessing` only advances a still-`PENDING` row, so a redelivered event
+  can't regress a terminal state). Infra errors retry once then dead-letter;
+  processing failures are reported and acked.
 - **Rate limiting**: a Redis fixed-window limiter on auth endpoints, enforced
   across all gateway replicas.
 - **Graceful shutdown**: every service drains in-flight work on SIGTERM.

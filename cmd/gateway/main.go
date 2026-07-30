@@ -29,6 +29,7 @@ const (
 	presignTTL     = 15 * time.Minute
 	rateLimit      = 60 // requests per window, per client IP
 	rateWindow     = time.Minute
+	statusPrefetch = 20 // concurrent status-event updates
 )
 
 func main() {
@@ -79,6 +80,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	// A separate channel to consume worker status events (a channel is not safe
+	// for concurrent publish + consume).
+	statusCh, err := rabbitConn.Channel()
+	if err != nil {
+		logger.Error("open status channel", "error", err)
+		os.Exit(1)
+	}
+	defer statusCh.Close()
+
 	objectStore, err := storage.New(cfg.Storage)
 	if err != nil {
 		logger.Error("create object store client", "error", err)
@@ -92,9 +102,10 @@ func main() {
 	logger.Info("all dependencies connected")
 
 	// --- Wire the HTTP server --------------------------------------------
+	videoRepo := postgres.NewVideoRepository(pool)
 	server := gateway.NewServer(gateway.Deps{
 		Users:     postgres.NewUserRepository(pool),
-		Videos:    postgres.NewVideoRepository(pool),
+		Videos:    videoRepo,
 		Objects:   objectStore,
 		Publisher: messaging.NewPublisher(channel),
 		Tokens:    auth.NewManager(cfg.JWT.Secret, cfg.JWT.TTL),
@@ -147,6 +158,16 @@ func main() {
 
 	ctx, stop := platform.ShutdownContext()
 	defer stop()
+
+	// Consume worker status events and apply them to the videos table (the
+	// gateway is the sole writer). Runs until the shutdown signal drains it.
+	statusConsumer := gateway.NewStatusConsumer(videoRepo)
+	go func() {
+		if err := statusConsumer.Consume(ctx, statusCh, statusPrefetch); err != nil {
+			logger.Error("status consumer stopped with error", "error", err)
+		}
+	}()
+
 	<-ctx.Done()
 
 	logger.Info("gateway shutting down")

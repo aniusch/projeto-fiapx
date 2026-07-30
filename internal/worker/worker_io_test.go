@@ -9,7 +9,7 @@ import (
 
 func TestDownloadWritesObjectToFile(t *testing.T) {
 	o := &fakeObjects{}
-	w := newTestWorker(t, &fakeVideos{}, &fakeUsers{}, o, &fakeEvents{})
+	w := newTestWorker(t, o, &fakeEvents{})
 
 	dst := filepath.Join(t.TempDir(), "source.mp4")
 	if err := w.download(context.Background(), "sources/x.mp4", dst); err != nil {
@@ -26,7 +26,7 @@ func TestDownloadWritesObjectToFile(t *testing.T) {
 
 func TestUploadZipStoresObject(t *testing.T) {
 	o := &fakeObjects{}
-	w := newTestWorker(t, &fakeVideos{}, &fakeUsers{}, o, &fakeEvents{})
+	w := newTestWorker(t, o, &fakeEvents{})
 
 	path := filepath.Join(t.TempDir(), "frames.zip")
 	if err := os.WriteFile(path, []byte("zip-bytes"), 0o644); err != nil {

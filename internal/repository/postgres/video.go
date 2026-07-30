@@ -87,9 +87,11 @@ func (r *VideoRepository) ListByUser(ctx context.Context, userID uuid.UUID) ([]d
 }
 
 // MarkProcessing transitions a job to PROCESSING (a worker picking up the job).
+// It only advances a row that is still PENDING, so a redelivered "processing"
+// event cannot regress an already-terminal (DONE/FAILED) row back to PROCESSING.
 func (r *VideoRepository) MarkProcessing(ctx context.Context, id uuid.UUID) error {
-	const q = `UPDATE videos SET status = $2 WHERE id = $1`
-	return r.exec(ctx, q, id, domain.StatusProcessing)
+	const q = `UPDATE videos SET status = $2 WHERE id = $1 AND status = $3`
+	return r.exec(ctx, q, id, domain.StatusProcessing, domain.StatusPending)
 }
 
 // MarkDone records a successful result: the zip's storage key and frame count.

@@ -19,6 +19,7 @@ import (
 type UserStore interface {
 	Create(ctx context.Context, u *domain.User) error
 	GetByEmail(ctx context.Context, email string) (domain.User, error)
+	GetByID(ctx context.Context, id uuid.UUID) (domain.User, error)
 }
 
 // VideoStore persists and lists videos.

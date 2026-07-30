@@ -38,15 +38,28 @@ func DeclareTopology(ch *amqp.Channel) error {
 		return fmt.Errorf("bind jobs DLQ: %w", err)
 	}
 
-	// --- Events exchange + notifications queue ----------------------------
+	// --- Events exchange + consumer queues --------------------------------
 	if err := ch.ExchangeDeclare(ExchangeEvents, amqp.ExchangeTopic, true, false, false, false, nil); err != nil {
 		return fmt.Errorf("declare events exchange: %w", err)
 	}
+
+	// The notifier only cares about failures.
 	if _, err := ch.QueueDeclare(QueueNotifications, true, false, false, false, nil); err != nil {
 		return fmt.Errorf("declare notifications queue: %w", err)
 	}
 	if err := ch.QueueBind(QueueNotifications, RoutingKeyFailed, ExchangeEvents, false, nil); err != nil {
 		return fmt.Errorf("bind notifications queue: %w", err)
+	}
+
+	// The gateway consumes every lifecycle event to keep the videos table — which
+	// it alone writes — in step with the worker's progress.
+	if _, err := ch.QueueDeclare(QueueVideoStatus, true, false, false, false, nil); err != nil {
+		return fmt.Errorf("declare status queue: %w", err)
+	}
+	for _, key := range []string{RoutingKeyProcessing, RoutingKeyDone, RoutingKeyFailed} {
+		if err := ch.QueueBind(QueueVideoStatus, key, ExchangeEvents, false, nil); err != nil {
+			return fmt.Errorf("bind status queue (%s): %w", key, err)
+		}
 	}
 
 	return nil

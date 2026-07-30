@@ -28,3 +28,4 @@ alternatives rejected — not just *what* the code does. Six months later, that
 | [0008](./0008-observability-prometheus-grafana.md) | Observability with Prometheus and Grafana | Accepted |
 | [0009](./0009-secrets-external-secrets-operator.md) | Secrets via External Secrets Operator (node-role auth) | Accepted |
 | [0010](./0010-continuous-deployment-keel-and-manual-apply.md) | Continuous deployment via Keel + a manual apply workflow | Accepted |
+| [0011](./0011-database-per-service-single-writer.md) | One database per service — gateway as the single writer | Accepted |

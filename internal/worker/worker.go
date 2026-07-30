@@ -6,7 +6,6 @@ package worker
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -14,26 +13,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/google/uuid"
-
-	"github.com/aniusch/projeto-fiapx/internal/domain"
 	"github.com/aniusch/projeto-fiapx/internal/messaging"
 	"github.com/aniusch/projeto-fiapx/internal/observability"
 	"github.com/aniusch/projeto-fiapx/internal/processing"
 )
-
-// VideoStore reads and updates video job state.
-type VideoStore interface {
-	GetByID(ctx context.Context, id uuid.UUID) (domain.Video, error)
-	MarkProcessing(ctx context.Context, id uuid.UUID) error
-	MarkDone(ctx context.Context, id uuid.UUID, zipKey string, frameCount int) error
-	MarkFailed(ctx context.Context, id uuid.UUID, reason string) error
-}
-
-// UserStore looks up the owner of a video (to address failure notifications).
-type UserStore interface {
-	GetByID(ctx context.Context, id uuid.UUID) (domain.User, error)
-}
 
 // ObjectStore reads source videos and writes result archives.
 type ObjectStore interface {
@@ -41,8 +24,12 @@ type ObjectStore interface {
 	Put(ctx context.Context, key string, r io.Reader, size int64, contentType string) error
 }
 
-// EventPublisher emits failure events for the notifier.
+// EventPublisher emits the video's lifecycle events. The worker owns no database;
+// it reports every state transition through these events, and the gateway (the
+// sole writer of the videos table) applies them.
 type EventPublisher interface {
+	PublishVideoProcessing(ctx context.Context, event messaging.VideoProcessingEvent) error
+	PublishVideoDone(ctx context.Context, event messaging.VideoDoneEvent) error
 	PublishVideoFailed(ctx context.Context, event messaging.VideoFailedEvent) error
 }
 
@@ -56,8 +43,6 @@ type Config struct {
 
 // Deps groups the worker's collaborators. Metrics may be nil (e.g. in tests).
 type Deps struct {
-	Videos  VideoStore
-	Users   UserStore
 	Objects ObjectStore
 	Events  EventPublisher
 	Metrics *observability.WorkerMetrics
@@ -65,10 +50,9 @@ type Deps struct {
 }
 
 // Worker processes one job at a time via Handle; concurrency is managed by the
-// consumer (see consumer.go).
+// consumer (see consumer.go). It is stateless: it holds no database handle and
+// communicates results purely through events.
 type Worker struct {
-	videos  VideoStore
-	users   UserStore
 	objects ObjectStore
 	events  EventPublisher
 	metrics *observability.WorkerMetrics
@@ -78,8 +62,6 @@ type Worker struct {
 // New builds a Worker from its dependencies.
 func New(d Deps) *Worker {
 	return &Worker{
-		videos:  d.Videos,
-		users:   d.Users,
 		objects: d.Objects,
 		events:  d.Events,
 		metrics: d.Metrics,
@@ -95,9 +77,9 @@ func New(d Deps) *Worker {
 // from the queue's perspective: it is recorded as FAILED, a notification event is
 // published, and Handle returns nil so the message is acknowledged.
 //
-// Handle is idempotent: redelivery of an already-finished job is a no-op, and the
-// result object uses a deterministic key so reprocessing overwrites rather than
-// duplicates.
+// Handle is safe to retry: the result object uses a deterministic key so
+// reprocessing overwrites rather than duplicates, and the gateway applies the
+// resulting status events idempotently.
 func (w *Worker) Handle(ctx context.Context, job messaging.VideoJob) error {
 	w.metrics.JobStarted()
 	start := time.Now()
@@ -110,23 +92,11 @@ func (w *Worker) Handle(ctx context.Context, job messaging.VideoJob) error {
 // The outcome feeds the metrics; the error (non-nil only for infra failures)
 // drives the consumer's ack/requeue decision.
 func (w *Worker) process(ctx context.Context, job messaging.VideoJob) (outcome string, err error) {
-	video, err := w.videos.GetByID(ctx, job.VideoID)
-	if err != nil {
-		if errors.Is(err, domain.ErrNotFound) {
-			// The row is gone (e.g. user deleted). Nothing to do; don't retry.
-			slog.Warn("job references unknown video, dropping", "video_id", job.VideoID)
-			return "skipped", nil
-		}
-		return "error", fmt.Errorf("load video: %w", err) // infra → retry
-	}
-
-	if video.Status == domain.StatusDone {
-		slog.Info("job already done, skipping", "video_id", job.VideoID)
-		return "skipped", nil // idempotent skip
-	}
-
-	if err := w.videos.MarkProcessing(ctx, job.VideoID); err != nil {
-		return "error", fmt.Errorf("mark processing: %w", err) // infra → retry
+	// Announce that work has started. This is only a status hint: if it never
+	// reaches the gateway the job still runs and the terminal (done/failed) event
+	// carries the row to its final state, so a publish failure only warns.
+	if err := w.events.PublishVideoProcessing(ctx, messaging.VideoProcessingEvent{VideoID: job.VideoID}); err != nil {
+		slog.Warn("publish processing event", "error", err, "video_id", job.VideoID)
 	}
 
 	// Per-job scratch directory, cleaned up regardless of outcome.
@@ -155,8 +125,14 @@ func (w *Worker) process(ctx context.Context, job messaging.VideoJob) (outcome s
 		return "error", fmt.Errorf("upload result: %w", err) // infra → retry
 	}
 
-	if err := w.videos.MarkDone(ctx, job.VideoID, zipKey, result.FrameCount); err != nil {
-		return "error", fmt.Errorf("mark done: %w", err) // infra → retry
+	// The done event is the only record of success, so a publish failure must
+	// requeue the job (the deterministic result key makes a re-run a safe overwrite).
+	if err := w.events.PublishVideoDone(ctx, messaging.VideoDoneEvent{
+		VideoID:    job.VideoID,
+		ZipKey:     zipKey,
+		FrameCount: result.FrameCount,
+	}); err != nil {
+		return "error", fmt.Errorf("publish done event: %w", err) // infra → retry
 	}
 
 	slog.Info("video processed", "video_id", job.VideoID, "frames", result.FrameCount)
@@ -172,41 +148,28 @@ func (w *Worker) failOutcome(ctx context.Context, job messaging.VideoJob, userMe
 	return "failed", nil
 }
 
-// fail records a processing failure and notifies the user. userMessage is the
-// friendly, user-facing text (stored and emailed); cause is the technical detail
-// (e.g. raw ffmpeg output) which is only logged, never shown to the user. It
-// returns nil so the message is acked — the failure is durably recorded and the
-// user informed, so re-running the doomed job would serve no purpose.
+// fail reports a processing failure. userMessage is the friendly, user-facing
+// text (stored by the gateway and emailed by the notifier); cause is the
+// technical detail (e.g. raw ffmpeg output) which is only logged, never shown to
+// the user. The failure event is the sole record of the failure, so if it can't
+// be published the error is returned to requeue the job; otherwise it returns
+// nil so the message is acked — re-running a doomed job would serve no purpose.
+// The owner's email rides along in the job, so no database lookup is needed.
 func (w *Worker) fail(ctx context.Context, job messaging.VideoJob, userMessage string, cause error) error {
 	// Operators get the full technical cause in the logs.
 	slog.Warn("video failed", "video_id", job.VideoID, "message", userMessage, "cause", cause)
 
-	if err := w.videos.MarkFailed(ctx, job.VideoID, userMessage); err != nil {
-		// If we can't even record the failure, let the job retry.
-		return fmt.Errorf("mark failed: %w", err)
-	}
-
-	// Look up the owner's email so the notifier doesn't have to. A lookup miss
-	// is non-fatal — we still emit the event, just without an address.
-	email := ""
-	if u, err := w.users.GetByID(ctx, job.UserID); err == nil {
-		email = u.Email
-	}
-
 	event := messaging.VideoFailedEvent{
 		VideoID:      job.VideoID,
 		UserID:       job.UserID,
-		Email:        email,
+		Email:        job.Email,
 		OriginalName: job.OriginalName,
 		Reason:       userMessage,
 		OccurredAt:   time.Now(),
 	}
 	if err := w.events.PublishVideoFailed(ctx, event); err != nil {
-		// The FAILED status is recorded; a lost notification shouldn't requeue
-		// the whole job. Log and move on.
-		slog.Error("publish failure event", "error", err, "video_id", job.VideoID)
+		return fmt.Errorf("publish failure event: %w", err)
 	}
-
 	return nil
 }
 

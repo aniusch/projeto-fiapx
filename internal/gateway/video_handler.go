@@ -73,9 +73,20 @@ func (s *Server) handleUpload(c *gin.Context) {
 		return
 	}
 
+	// The worker is stateless, so it can't look up the owner's address later.
+	// Resolve it here (the gateway owns the users table) and carry it in the job
+	// so a failure notification can be sent. A miss is non-fatal.
+	email := ""
+	if u, err := s.users.GetByID(ctx, userID); err != nil {
+		slog.Warn("could not resolve owner email for job", "error", err, "user_id", userID)
+	} else {
+		email = u.Email
+	}
+
 	job := messaging.VideoJob{
 		VideoID:      video.ID,
 		UserID:       userID,
+		Email:        email,
 		SourceKey:    key,
 		OriginalName: video.OriginalName,
 	}
