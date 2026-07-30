@@ -44,4 +44,5 @@ module "storage" {
 
   project       = var.project
   bucket_prefix = "${var.project}-videos"
+  force_destroy = true # short-lived lab: allow teardown even with videos present
 }

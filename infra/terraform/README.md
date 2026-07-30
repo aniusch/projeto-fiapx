@@ -86,7 +86,18 @@ add-on (it works in Learner Lab via the node role).
 
 ## Teardown
 
+Stop the budget clock at the end of a session. The script deletes the app
+namespace first, then destroys the lab environment (EKS, RDS, S3, etc.); the
+videos bucket has `force_destroy` so a non-empty bucket won't block it. The
+remote-state backend is left in place (it's ~free); add `--all` to remove it too.
+
 ```bash
-cd envs/lab && terraform destroy && cd ../..
-# bootstrap last, only if you no longer need remote state
+AWS_PROFILE=fiap TF_VAR_db_password=whatever ./scripts/teardown.sh          # env only
+AWS_PROFILE=fiap TF_VAR_db_password=whatever ./scripts/teardown.sh --all    # + state backend
+```
+
+Or by hand:
+
+```bash
+terraform -chdir=envs/lab destroy -var-file=lab.tfvars   # needs TF_VAR_db_password
 ```
