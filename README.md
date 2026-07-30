@@ -54,6 +54,9 @@ docker-compose.yml    local infrastructure (Postgres, Redis, RabbitMQ, MinIO, Ma
 
 ## Running locally
 
+Common tasks are wrapped in a [`Makefile`](./Makefile) — run `make help` for the
+list (`make up`, `make check`, `make cover`, `make test-integration`, …).
+
 Bring up the whole system (backing services, the three app services, monitoring,
 and the DB migrations) with one command:
 
