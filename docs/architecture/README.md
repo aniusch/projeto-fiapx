@@ -14,6 +14,11 @@ directly on GitHub. They evolve alongside the code, phase by phase.
 | [AWS/EKS cloud topology](./aws-topology.md) | Detailed AWS topology: VPC, EKS namespaces, RDS/S3/Secrets Manager, GHCR, node-role auth. |
 | [Workflow (runtime + CI/CD)](./aws-workflow.md) | The runtime request/processing flow and the CI/CD + secrets-sync flow. |
 
+Presentation-ready, editable versions of the AWS diagrams are provided as draw.io
+files — open in [diagrams.net](https://app.diagrams.net) and export to PNG/SVG for
+slides: [`aws-topology.drawio`](./aws-topology.drawio) and
+[`aws-workflow.drawio`](./aws-workflow.drawio).
+
 See also the [Architecture Decision Records](../adr/) for the *why* behind these.
 
 ## C4 model, briefly
