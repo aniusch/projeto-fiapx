@@ -1,0 +1,192 @@
+### FIAP X — API requests for the VS Code REST Client extension (humao.rest-client).
+###
+### Click "Send Request" above each request (or Ctrl+Alt+R). Run them top to
+### bottom: later requests reuse the token and video ids from earlier responses.
+### Needs the local stack: `make up`.
+
+@baseUrl = http://localhost:8080
+@mailpitUrl = http://localhost:8025
+@email = demo@fiapx.local
+@password = password123
+
+# Captured from earlier responses — send "login" / "upload" first.
+@token = {{login.response.body.$.token}}
+@videoId = {{upload.response.body.$.id}}
+@badVideoId = {{uploadCorrupt.response.body.$.id}}
+
+
+############################################################################
+# 0. Health
+############################################################################
+
+### Liveness
+GET {{baseUrl}}/healthz
+
+### Readiness — pings Postgres and Redis
+GET {{baseUrl}}/readyz
+
+
+############################################################################
+# 1. Auth
+############################################################################
+
+### Register — 201 the first time, 409 once the e-mail exists (that's fine)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Login — its token is used by every request below
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Wrong password → 401 with a generic message (no user enumeration)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "wrong-password"
+}
+
+### Weak password → 400 (min 8 chars)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "weak@fiapx.local",
+  "password": "123"
+}
+
+
+############################################################################
+# 2. Happy path: upload → process → download
+############################################################################
+
+### Upload a video → 202 PENDING (processing is asynchronous)
+# @name upload
+POST {{baseUrl}}/videos
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=FiapxBoundary
+
+--FiapxBoundary
+Content-Disposition: form-data; name="video"; filename="sample.mp4"
+Content-Type: video/mp4
+
+< ../postman/fixtures/sample.mp4
+--FiapxBoundary--
+
+### Status of that video — re-send until "status": "DONE"
+GET {{baseUrl}}/videos/{{videoId}}
+Authorization: Bearer {{token}}
+
+### List all my videos, newest first
+GET {{baseUrl}}/videos
+Authorization: Bearer {{token}}
+
+### Download → 302 redirect to a presigned S3/MinIO URL (see the Location header)
+# @no-redirect
+GET {{baseUrl}}/videos/{{videoId}}/download
+Authorization: Bearer {{token}}
+
+### Download, following the redirect → the frames zip itself
+GET {{baseUrl}}/videos/{{videoId}}/download
+Authorization: Bearer {{token}}
+
+
+############################################################################
+# 3. Failure path: corrupt video → FAILED → e-mail
+############################################################################
+
+### Upload a file that isn't really a video → 202 (it fails later, in the worker)
+# @name uploadCorrupt
+POST {{baseUrl}}/videos
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=FiapxBoundary
+
+--FiapxBoundary
+Content-Disposition: form-data; name="video"; filename="corrupt.mp4"
+Content-Type: video/mp4
+
+< ../postman/fixtures/corrupt.mp4
+--FiapxBoundary--
+
+### Status — re-send until "status": "FAILED" with an error_message
+GET {{baseUrl}}/videos/{{badVideoId}}
+Authorization: Bearer {{token}}
+
+### Download a failed video → 409
+GET {{baseUrl}}/videos/{{badVideoId}}/download
+Authorization: Bearer {{token}}
+
+### The failure e-mail, as caught by Mailpit (UI: http://localhost:8025)
+GET {{mailpitUrl}}/api/v1/search?query=to:{{email}}
+
+
+############################################################################
+# 4. Validation & security
+############################################################################
+
+### No token → 401
+GET {{baseUrl}}/videos
+
+### Bogus token → 401
+GET {{baseUrl}}/videos
+Authorization: Bearer not.a.jwt
+
+### Unsupported extension → 400
+POST {{baseUrl}}/videos
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=FiapxBoundary
+
+--FiapxBoundary
+Content-Disposition: form-data; name="video"; filename="notes.txt"
+Content-Type: text/plain
+
+< ../postman/fixtures/notes.txt
+--FiapxBoundary--
+
+### Invalid id → 400
+GET {{baseUrl}}/videos/not-a-uuid
+Authorization: Bearer {{token}}
+
+### Unknown id → 404
+GET {{baseUrl}}/videos/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+
+
+############################################################################
+# 5. Isolation: another user can't see my video
+############################################################################
+
+### Register (or re-register → 409) a second user
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "other@fiapx.local",
+  "password": "{{password}}"
+}
+
+### Log in as the second user
+# @name otherLogin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "other@fiapx.local",
+  "password": "{{password}}"
+}
+
+### Second user asks for my video → 404 (not 403, so its existence isn't leaked)
+GET {{baseUrl}}/videos/{{videoId}}
+Authorization: Bearer {{otherLogin.response.body.$.token}}
