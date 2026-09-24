@@ -62,8 +62,10 @@ services:
       timeout: 5s
       retries: 10
 
+  # MinIO stopped publishing images to Docker Hub/quay.io; pgsty/* are
+  # community rebuilds of the upstream binaries (same CLI and entrypoint).
   minio:
-    image: minio/minio:RELEASE.2024-06-13T22-53-53Z
+    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: minioadmin
@@ -76,7 +78,7 @@ services:
 
   # Waits for MinIO, then creates the bucket. Idempotent, so re-runs are safe.
   minio-init:
-    image: minio/mc:RELEASE.2024-06-12T14-34-03Z
+    image: pgsty/mc:RELEASE.2026-09-16T00-00-00Z
     depends_on:
       - minio
     entrypoint:

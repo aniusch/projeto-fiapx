@@ -52,6 +52,10 @@ tidy:
 ## check: what CI runs — fmt-check, vet, build, unit tests
 check: fmt-check vet build test
 
+## postman: run the Postman collection with newman — needs `make up` first
+postman:
+	cd postman && npx --yes newman@6 run fiapx.postman_collection.json -e local.postman_environment.json
+
 # --- Local stack (docker compose) -----------------------------------------
 
 ## up: start the full local stack (infra + services + monitoring)
@@ -91,5 +95,5 @@ clean:
 	rm -f coverage.out
 	go clean
 
-.PHONY: help build test test-race cover test-integration vet fmt fmt-check tidy check \
+.PHONY: help build test test-race cover test-integration postman vet fmt fmt-check tidy check \
 	up down logs images run-gateway run-worker run-notifier clean
