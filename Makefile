@@ -56,6 +56,15 @@ check: fmt-check vet build test
 postman:
 	cd postman && npx --yes newman@6 run fiapx.postman_collection.json -e local.postman_environment.json
 
+## spike: k6 upload spike + drain check, streamed live to Grafana — needs `make up`
+spike:
+	@mkdir -p load/results
+	@echo "Live dashboard: http://localhost:3000/d/fiapx-spike (admin/admin)"
+	cd load && K6_PROMETHEUS_RW_SERVER_URL=http://localhost:9090/api/v1/write \
+		K6_PROMETHEUS_RW_TREND_STATS="p(95),avg,max" \
+		K6_PROMETHEUS_RW_PUSH_INTERVAL=2s \
+		k6 run -o experimental-prometheus-rw -e TESTID=spike-$$(date +%s) spike.js
+
 # --- Local stack (docker compose) -----------------------------------------
 
 ## up: start the full local stack (infra + services + monitoring)
@@ -95,5 +104,5 @@ clean:
 	rm -f coverage.out
 	go clean
 
-.PHONY: help build test test-race cover test-integration postman vet fmt fmt-check tidy check \
+.PHONY: help build test test-race cover test-integration postman spike vet fmt fmt-check tidy check \
 	up down logs images run-gateway run-worker run-notifier clean

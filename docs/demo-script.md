@@ -93,6 +93,29 @@ kubectl -n fiapx get hpa worker      # 2→6 replicas on CPU
 - Narrate: the CPU-heavy worker scales independently; competing consumers on the
   durable queue spread the load, so bursts are absorbed without losing requests.
 
+### Spike test — "não perder requisição em picos" (live, ~3 min)
+
+Before recording: `docker compose up -d --scale worker=1` (a single worker makes the
+backlog obvious), then open **"FIAP X — Spike test"** in Grafana
+(<http://localhost:3000/d/fiapx-spike>, auto-refresh 5s, last 5 minutes).
+
+```bash
+make spike            # k6: 2 uploads/s → 25 uploads/s for 30s → 2 uploads/s
+```
+
+1. **Spike (0:20–1:00):** "Uploads in" jumps to 25/s; the gateway's status panel
+   shows only **202**; upload p95 stays in the tens of milliseconds.
+2. **Backlog:** the `videos.jobs` queue climbs to ~700 — the spike lands in the
+   durable queue, not on the floor.
+3. **Scale out while it drains:** `docker compose up -d --scale worker=3` — the
+   replicas panel goes 1→3 and the queue falls faster.
+4. **Verdict:** k6 polls every test user's `/videos` until nothing is pending, then
+   prints `accepted == processed, lost 0` and turns the thresholds green. The
+   *Processed* and *Lost* tiles fill in.
+
+Bigger spike: `PEAK_RATE=40 SPIKE_DURATION=45s make spike`. The run fails
+(non-zero exit) if any upload is rejected or any accepted video never finishes.
+
 ## 8:45–10:00 — Quality: tests & CI/CD
 
 ```bash
